@@ -1,0 +1,1 @@
+// Centralized route declarations placeholder.
