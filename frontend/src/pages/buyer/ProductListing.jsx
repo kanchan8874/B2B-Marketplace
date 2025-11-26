@@ -46,6 +46,7 @@ const ProductListing = () => {
             ? `Showing products in ${categories.find((cat) => cat.id === categoryId)?.name}`
             : 'Browse verified suppliers with MOQ, price band, and seller context.'
         }
+        className="border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
       >
         <div className="mb-6 grid gap-4 md:grid-cols-2">
           <FormField

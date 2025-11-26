@@ -49,7 +49,7 @@ const RFQCenter = () => {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[32px] border border-white/70 bg-white/95 p-6 shadow-[0_20px_60px_rgba(15,98,254,0.08)]">
+      <div className="rounded-[32px] border border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.14)]">
         <div className="mb-6 flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold text-neutral-900">Requests For Quote</h1>
           <div className="flex items-center gap-3">
@@ -79,14 +79,11 @@ const RFQCenter = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-white/80">
+              <tr className="border-b border-neutral-200 text-xs font-semibold uppercase tracking-[0.16em] text-neutral-600">
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   Product
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
-                  Side
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   Quantity
@@ -96,9 +93,6 @@ const RFQCenter = () => {
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
-                  Direction
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   Expires In
@@ -117,45 +111,34 @@ const RFQCenter = () => {
                 </tr>
               ) : (
                 paginatedRFQs.map((rfq) => (
-                  <tr key={rfq.id} className="hover:bg-neutral-50/50 transition-colors">
-                    <td className="px-4 py-4">
-                      <p className="text-sm font-semibold text-neutral-900">{rfq.productName}</p>
+                  <tr
+                    key={rfq.id}
+                    className="group bg-white/90 transition-colors hover:bg-blue-50/60"
+                  >
+                    <td className="px-4 py-4 first:rounded-l-2xl">
+                      <p className="font-semibold text-neutral-900">{rfq.productName}</p>
                     </td>
                     <td className="px-4 py-4">
-                      <span className="text-sm font-medium text-neutral-700">Buy</span>
+                      <p className="font-medium text-neutral-800">{rfq.quantity.toLocaleString()}</p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-sm text-neutral-700">{rfq.quantity.toLocaleString()}</p>
-                    </td>
-                    <td className="px-4 py-4">
-                      <p className="text-sm text-neutral-700">{rfq.seller || 'N/A'}</p>
+                      <p className="text-neutral-800">{rfq.seller || 'N/A'}</p>
                     </td>
                     <td className="px-4 py-4">
                       <StatusTag tone={getStatusTone(rfq.status)}>{rfq.status}</StatusTag>
                     </td>
                     <td className="px-4 py-4">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          rfq.direction === 'In'
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'bg-neutral-100 text-neutral-600'
-                        }`}
-                      >
-                        {rfq.direction || 'Out'}
-                      </span>
+                      <p className="text-neutral-700">{rfq.expiresIn || 'N/A'}</p>
                     </td>
-                    <td className="px-4 py-4">
-                      <p className="text-sm text-neutral-600">{rfq.expiresIn || 'N/A'}</p>
-                    </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 last:rounded-r-2xl">
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-8 gap-1.5 px-3 text-xs"
+                        className="h-8 gap-1.5 rounded-full border border-neutral-200 bg-white/80 px-3 text-xs font-semibold text-neutral-800 hover:border-brand-primary/60 hover:text-brand-primary"
                         onClick={() => navigate(`/buyer/rfq/${rfq.id}`)}
                       >
                         <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                        View Details
+                        View details
                       </Button>
                     </td>
                   </tr>

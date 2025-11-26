@@ -1,3 +1,4 @@
+import { NavLink } from 'react-router-dom'
 import Logo from './Logo.jsx'
 
 const footerLinks = [
@@ -9,9 +10,13 @@ const footerLinks = [
 const Footer = () => (
   <footer className="border-t border-surface-border bg-surface-base/80 backdrop-blur-md">
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 text-sm text-neutral-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-      <div className="flex items-center gap-3">
-        <Logo compact />
-      </div>
+      <NavLink to="/" aria-label="B2B marketplace home" className="flex items-center gap-2">
+        <Logo />
+        <div className="flex flex-col leading-tight">
+          <p className="text-xs font-light uppercase tracking-[0.35em] text-neutral-600">Premium</p>
+          <p className="text-sm font-semibold text-neutral-900">Marketplace</p>
+        </div>
+      </NavLink>
       <p className="text-center sm:text-left">
         <span className="font-semibold text-neutral-800">© {new Date().getFullYear()} Atlas Trade</span>{' '}
         <span className="text-neutral-500">All rights reserved.</span>

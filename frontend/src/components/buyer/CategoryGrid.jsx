@@ -18,13 +18,17 @@ const CategoryGrid = ({ items, onSelect }) => (
         <button
           key={category.id}
           onClick={() => onSelect(category)}
-          className="group rounded-[28px] border border-white/80 bg-white/95 p-6 text-left shadow-[0_25px_60px_rgba(15,98,254,0.08)] transition hover:-translate-y-1 hover:shadow-[0_32px_70px_rgba(15,98,254,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+          className="group relative overflow-hidden rounded-3xl border border-gray-300 bg-gradient-to-br from-emerald-50/70 via-white/90 to-emerald-50/70 p-5 text-left backdrop-blur-sm shadow-[0_18px_48px_rgba(16,185,129,0.18)] transition-all duration-300 hover:bg-gradient-to-br hover:from-emerald-400/90 hover:via-emerald-100/95 hover:to-emerald-400/100 hover:shadow-[0_22px_64px_rgba(16,185,129,0.3)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
         >
-          <div className="mb-4 inline-flex rounded-2xl bg-brand-primary/10 p-3 text-brand-primary">
+          <div className="mb-3 inline-flex rounded-2xl bg-emerald-500/10 p-3 text-emerald-600 transition-colors duration-300 group-hover:bg-white group-hover:text-emerald-700">
             <Icon className="h-6 w-6" aria-hidden />
           </div>
-          <h3 className="text-lg font-semibold text-neutral-900">{category.name}</h3>
-          <p className="mt-2 text-sm text-neutral-600">{category.description}</p>
+          <h3 className="text-base font-semibold text-neutral-900 transition-colors duration-300 group-hover:text-neutral-900">
+            {category.name}
+          </h3>
+          <p className="mt-1.5 text-xs text-neutral-600 transition-colors duration-300 group-hover:text-neutral-700">
+            {category.description}
+          </p>
         </button>
       )
     })}
