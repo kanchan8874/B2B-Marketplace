@@ -2,7 +2,6 @@ import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
 import { gst, minLength, mobile, optionalCharacterLimit, required, email as emailRule } from '../../utils/validators.js'
-import { CheckCircle2 } from 'lucide-react'
 
 const initialValues = {
   buyerName: '',
@@ -20,11 +19,8 @@ const validationSchema = {
   gst: [gst('GST number')],
 }
 
-const insightItems = [
-  'Single review with compliance-ready fields',
-  'Mobile + email verification flows supported',
-  'Immediate access to curated supplier catalogues',
-]
+const buyerIllustration =
+  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const BuyerSignup = () => {
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
@@ -40,85 +36,101 @@ const BuyerSignup = () => {
   }
 
   return (
-    <section className="relative mx-auto max-w-4xl overflow-hidden rounded-[36px] border border-white/40 bg-gradient-to-br from-white via-white to-brand-primary/5 px-6 py-5 shadow-[0_25px_60px_rgba(15,98,254,0.15)] lg:px-8 lg:py-6">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-12 top-4 h-52 w-52 rounded-full bg-brand-primary/10 blur-3xl" />
-        <div className="absolute -right-10 bottom-0 h-64 w-64 rounded-full bg-brand-secondary/10 blur-3xl" />
-      </div>
-      <div className="relative z-10 grid gap-10 lg:grid-cols-2">
-        <div className="space-y-4 rounded-[32px] border border-white/70 bg-white p-5 shadow-[0_15px_50px_rgba(15,98,254,0.12)] backdrop-blur">
-          <form className="space-y-3" onSubmit={onSubmit} noValidate>
-          <FormField
-            id="buyerName"
-            name="buyerName"
-            label="Business name"
-            required
-            placeholder="Acme Retail Pvt. Ltd."
-            value={values.buyerName}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.buyerName}
-          />
-          <FormField
-            id="contactName"
-            name="contactName"
-            label="Contact person"
-            required
-            placeholder="Riya Patel"
-            value={values.contactName}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.contactName}
-          />
-          <FormField
-            id="email"
-            name="email"
-            label="Work email"
-            required
-            type="email"
-            placeholder="riya@acme.com"
-            value={values.email}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.email}
-          />
-          <FormField
-            id="phone"
-            name="phone"
-            label="Mobile (OTP login)"
-            required
-            type="tel"
-            placeholder="+91 9876543210"
-            value={values.phone}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.phone}
-          />
-          <FormField
-            id="gst"
-            name="gst"
-            label="GST Number (optional)"
-            placeholder="27ABCDE1234F1Z5"
-            value={values.gst}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.gst}
-          />
-          <Button type="submit" size="lg" className="w-full rounded-2xl">
-            Create buyer account
-          </Button>
-        </form>
-        </div>
+    <div className="flex justify-center bg-neutral-50 px-4 py-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-4xl my-0">
+        {/* Main Card - Two Column Layout (Form + Illustration) */}
+        <div className="rounded-[40px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
+            {/* Left Column - Signup Form */}
+            <div className="p-6 lg:p-8 lg:min-h-[620px] flex flex-col justify-center">
+              {/* Section Header */}
+              <div className="mb-5">
+                <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Create buyer account</h2>
+                <p className="text-xs text-neutral-600 font-medium">Fill in your business details to get started.</p>
+              </div>
 
-        <div
-          className="rounded-[36px] border border-transparent bg-cover bg-center shadow-[0_25px_80px_rgba(15,98,254,0.35)]"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, rgba(7,37,85,0.15), rgba(5,16,50,0.85)), url('https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=1100&q=80')",
-          }}
-        />
+              {/* Signup Form */}
+              <form className="mt-1 space-y-4 transition-all duration-200 ease-out" onSubmit={onSubmit} noValidate>
+                <FormField
+                  id="buyerName"
+                  name="buyerName"
+                  label="Business name"
+                  required
+                  placeholder="Acme Retail Pvt. Ltd."
+                  value={values.buyerName}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.buyerName}
+                  wrapperClassName="space-y-2"
+                />
+                <FormField
+                  id="contactName"
+                  name="contactName"
+                  label="Contact person"
+                  required
+                  placeholder="Riya Patel"
+                  value={values.contactName}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.contactName}
+                  wrapperClassName="space-y-2"
+                />
+                <FormField
+                  id="email"
+                  name="email"
+                  label="Work email"
+                  required
+                  type="email"
+                  placeholder="riya@acme.com"
+                  value={values.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.email}
+                  wrapperClassName="space-y-2"
+                />
+                <FormField
+                  id="phone"
+                  name="phone"
+                  label="Mobile (OTP login)"
+                  required
+                  type="tel"
+                  placeholder="+91 9876543210"
+                  value={values.phone}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.phone}
+                  wrapperClassName="space-y-2"
+                />
+                <FormField
+                  id="gst"
+                  name="gst"
+                  label="GST Number (optional)"
+                  placeholder="27ABCDE1234F1Z5"
+                  value={values.gst}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.gst}
+                  wrapperClassName="space-y-2"
+                />
+                <Button type="submit" size="md" className="w-full mt-2">
+                  Create buyer account
+                </Button>
+              </form>
+            </div>
+
+            {/* Right Column - B2B Illustration */}
+            <div className="relative hidden lg:block">
+              <img
+                src={buyerIllustration}
+                alt="B2B buyers collaborating in a digital marketplace workspace"
+                className="h-full w-full object-cover blur-[1px]"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/35 via-emerald-400/15 to-yellow-300/25 mix-blend-multiply" />
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }
 

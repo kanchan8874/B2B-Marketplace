@@ -6,9 +6,18 @@ export const connectDB = async () => {
     throw new Error('MONGODB_URI is not configured')
   }
 
-  await mongoose.connect(env.MONGODB_URI, {
-    autoIndex: env.NODE_ENV !== 'production',
-  })
+  try {
+    const conn = await mongoose.connect(env.MONGODB_URI, {
+      autoIndex: env.NODE_ENV !== 'production',
+    })
+
+    // eslint-disable-next-line no-console
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`)
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('❌ MongoDB connection error:', error.message)
+    throw error
+  }
 }
 
 

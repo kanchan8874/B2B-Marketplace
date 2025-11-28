@@ -47,23 +47,26 @@ const Header = () => {
           <nav aria-label="Primary authentication links" className="flex items-center gap-3">
             {navItems.map((item) => {
               const isActive = pathname === item.href
-              let buttonClasses = 'min-w-[140px] justify-center rounded-2xl text-sm font-semibold transition-all duration-300'
+              const baseClasses =
+                'min-w-[140px] justify-center rounded-[14px] px-6 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white'
+
+              let toneClasses = ''
 
               if (item.label === 'Buyer Login') {
-                // Blue gradient for Buyer Login
-                buttonClasses += isActive
-                  ? ' bg-gradient-to-r from-[#2563EB] to-[#1E40AF] text-white shadow-[0_4px_16px_rgba(37,99,235,0.4)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.5)] scale-100'
-                  : ' bg-white text-[#2563EB] border-2 border-[#2563EB]/20 hover:border-[#2563EB] hover:bg-[#2563EB]/5 shadow-sm hover:shadow-md'
+                // Hero CTA style – solid blue
+                toneClasses = isActive
+                  ? 'bg-[#2563EB] text-white shadow-[0_8px_20px_rgba(37,99,235,0.45)] hover:bg-[#1D4ED8]'
+                  : 'bg-[#2563EB] text-white shadow-sm hover:bg-[#1D4ED8]'
               } else if (item.label === 'Seller Login') {
-                // Teal/Green gradient for Seller Login
-                buttonClasses += isActive
-                  ? ' bg-gradient-to-r from-[#20B2AA] to-[#008B8B] text-white shadow-[0_4px_16px_rgba(32,178,170,0.4)] hover:shadow-[0_6px_20px_rgba(32,178,170,0.5)] scale-100'
-                  : ' bg-white text-[#20B2AA] border-2 border-[#20B2AA]/20 hover:border-[#20B2AA] hover:bg-[#20B2AA]/5 shadow-sm hover:shadow-md'
+                // Hero CTA style – teal gradient
+                toneClasses = isActive
+                  ? 'bg-gradient-to-r from-[#20B2AA] to-[#008B8B] text-white shadow-[0_8px_20px_rgba(32,178,170,0.45)] hover:from-[#1CA59D] hover:to-[#007A7A]'
+                  : 'bg-gradient-to-r from-[#20B2AA] to-[#008B8B] text-white shadow-sm hover:from-[#1CA59D] hover:to-[#007A7A]'
               } else if (item.label === 'Admin Login') {
-                // Gold/Yellow gradient for Admin Login
-                buttonClasses += isActive
-                  ? ' bg-gradient-to-r from-[#FFD700] to-[#FFA500] text-white shadow-[0_4px_16px_rgba(255,215,0,0.4)] hover:shadow-[0_6px_20px_rgba(255,215,0,0.5)] scale-100'
-                  : ' bg-white text-[#D4AF37] border-2 border-[#FFD700]/20 hover:border-[#FFD700] hover:bg-[#FFD700]/5 shadow-sm hover:shadow-md'
+                // Solid amber/orange
+                toneClasses = isActive
+                  ? 'bg-gradient-to-r from-[#FACC15] to-[#F97316] text-slate-900 shadow-[0_8px_20px_rgba(250,204,21,0.45)] hover:from-[#FACC15] hover:to-[#EA580C]'
+                  : 'bg-gradient-to-r from-[#FACC15] to-[#F97316] text-slate-900 shadow-sm hover:from-[#FACC15] hover:to-[#EA580C]'
               }
 
               return (
@@ -73,7 +76,7 @@ const Header = () => {
                   to={item.href}
                   variant="ghost"
                   size="md"
-                  className={buttonClasses}
+                  className={`${baseClasses} ${toneClasses}`}
                 >
                   {item.label}
                 </Button>
@@ -83,12 +86,12 @@ const Header = () => {
           <div className="relative" ref={menuRef}>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="md"
-              className={`min-w-[140px] justify-center rounded-2xl text-sm font-semibold transition-all duration-300 border-2 ${
+              className={`min-w-[140px] rounded-[18px] px-6 text-sm font-semibold ${
                 menuOpen
-                  ? 'bg-white text-neutral-900 border-[#2563EB] shadow-sm'
-                  : 'bg-white text-[#2563EB] border-[#2563EB]/20 hover:border-[#2563EB] hover:bg-[#2563EB]/5 shadow-sm hover:shadow-md'
+                  ? 'bg-white text-[#2563EB] border-[#2563EB]'
+                  : 'text-[#2563EB] border-[#2563EB]/80 hover:border-[#2563EB] hover:bg-[#2563EB]/6 shadow-sm hover:shadow-md'
               }`}
               aria-haspopup="menu"
               aria-expanded={menuOpen}
@@ -100,21 +103,31 @@ const Header = () => {
               <div
                 role="menu"
                 aria-label="Registration options"
-                className="absolute right-0 mt-3 w-64 rounded-2xl border border-neutral-200/80 bg-white/95 backdrop-blur-xl p-2 shadow-[0_8px_32px_rgba(0,0,0,0.12)]"
+                className="absolute right-0 mt-2.5 w-[220px] rounded-lg bg-white border border-neutral-200/60 shadow-[0_4px_16px_rgba(15,23,42,0.12)] overflow-hidden"
               >
-                {registerOptions.map((option) => (
-                  <Button
+                {registerOptions.map((option, index) => (
+                  <NavLink
                     key={option.href}
-                    as={NavLink}
                     to={option.href}
-                    variant="ghost"
-                    size="md"
-                    className="w-full justify-start rounded-xl border-0 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-all duration-200"
-                    onClick={() => setMenuOpen(false)}
                     role="menuitem"
+                    tabIndex={0}
+                    className={`block w-full px-5 py-3.5 text-center text-sm font-medium text-neutral-800 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-primary/30 focus-visible:bg-neutral-50 ${
+                      index === 0 ? 'border-b border-neutral-100' : ''
+                    } hover:bg-neutral-50 active:bg-neutral-100`}
+                    onClick={() => setMenuOpen(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setMenuOpen(false)
+                        window.location.href = option.href
+                      }
+                      if (e.key === 'Escape') {
+                        setMenuOpen(false)
+                      }
+                    }}
                   >
                     {option.label}
-                  </Button>
+                  </NavLink>
                 ))}
               </div>
             )}

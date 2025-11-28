@@ -15,8 +15,34 @@ const enrichedProducts = products.map((product, index) => ({
   category: 'Food & Agriculture',
 }))
 
+const renderProductCell = (row) => (
+  <div className="flex items-center gap-3">
+    <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
+      {row.gallery && row.gallery[0] ? (
+        <img
+          src={row.gallery[0]}
+          alt={row.name}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="text-xs font-semibold text-neutral-500">
+          {row.name?.charAt(0)}
+        </span>
+      )}
+    </div>
+    <div className="min-w-0">
+      <p className="truncate text-sm font-semibold text-neutral-900">{row.name}</p>
+      {row.shortDescription && (
+        <p className="mt-0.5 truncate text-xs text-neutral-500 max-w-[220px]">
+          {row.shortDescription}
+        </p>
+      )}
+    </div>
+  </div>
+)
+
 const allProductsColumns = [
-  { header: 'Product Name', accessor: 'name' },
+  { header: 'Product', accessor: 'name', cell: renderProductCell },
   { header: 'Seller', accessor: 'seller' },
   { header: 'Category', accessor: 'category' },
   { header: 'Price Range', accessor: (row) => `₹${row.priceMin} - ₹${row.priceMax}` },
@@ -30,7 +56,7 @@ const allProductsColumns = [
 ]
 
 const pendingProductsColumns = [
-  { header: 'Product Name', accessor: 'name' },
+  { header: 'Product', accessor: 'name', cell: renderProductCell },
   { header: 'Seller', accessor: 'seller' },
   { header: 'Category', accessor: 'category' },
   { header: 'Price Range', accessor: (row) => `₹${row.priceMin} - ₹${row.priceMax}` },
@@ -106,6 +132,7 @@ const ProductModeration = () => {
         <Card
           title="All Products"
           subtitle={`${allProducts.length} total products • ${pendingProducts.length} pending approval`}
+          className="bg-gradient-to-br from-blue-50/70 via-white to-teal-50/70"
         >
           <div className="mb-6">
             <FormField
@@ -117,6 +144,8 @@ const ProductModeration = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={Search}
+              wrapperClassName="!space-y-1 text-xs"
+              inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm"
             />
           </div>
           <DataTable columns={allProductsColumns} data={filteredAllProducts} />
@@ -134,7 +163,7 @@ const ProductModeration = () => {
         <Card
           title="Pending Approval Products"
           subtitle={`${pendingProducts.length} products awaiting review`}
-          className="border-2 border-status-warning/20"
+          className="border-2 border-status-warning/20 bg-gradient-to-br from-amber-50/70 via-white to-amber-50/60"
         >
           <div className="mb-6">
             <FormField
@@ -146,6 +175,8 @@ const ProductModeration = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={Search}
+              wrapperClassName="!space-y-1 text-xs"
+              inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm"
             />
           </div>
           {filteredPendingProducts.length > 0 ? (

@@ -6,45 +6,86 @@ const stats = [
   { label: 'RFQs processed', value: '18k+' },
 ]
 
+const heroImage = 'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1920&q=90'
+
 const PublicLayout = () => (
-  <div className="space-y-16">
-    <section className="relative overflow-hidden rounded-[56px] border border-white/30 bg-gradient-to-br from-[#f6fbff] via-white to-[#dfe9ff] p-10 shadow-[0_35px_120px_rgba(15,98,254,0.18)] sm:p-16">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/3 top-0 h-72 w-72 -translate-y-1/2 rounded-full bg-brand-primary/10 blur-3xl" />
-        <div className="absolute right-0 bottom-0 h-80 w-80 translate-x-1/3 rounded-full bg-brand-secondary/10 blur-3xl" />
-      </div>
-      <div className="relative z-10 space-y-8">
-        <div className="inline-flex items-center gap-2 rounded-full border border-brand-secondary/30 bg-white/80 px-5 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-brand-secondary shadow-sm">
-          B2B Marketplace MVP
-        </div>
-        <div className="max-w-3xl space-y-6">
-          <h1 className="text-4xl font-semibold leading-tight text-neutral-900 sm:text-5xl lg:text-6xl">
-            Modern procurement experience for ambitious teams.
-          </h1>
-          <p className="text-lg text-neutral-600 lg:text-xl">
-            Buyers discover vetted products, sellers manage catalogues, and admins retain complete oversight — all in a
-            premium, WCAG compliant interface designed for fast RFQs and confident decisions.
-          </p>
-          <div className="flex flex-wrap gap-4">
-            <Button as="a" href="/auth/buyer/signup" size="lg" className="px-6">
-              Get started as buyer
-            </Button>
-            <Button as="a" href="/auth/seller/signup" variant="secondary" size="lg" className="px-6">
-              Onboard as seller
-            </Button>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-4 rounded-[32px] border border-white/60 bg-white/70 p-5 text-sm text-neutral-600 shadow-inner backdrop-blur">
-          {stats.map((stat) => (
-            <div key={stat.label} className="min-w-[180px] flex-1 rounded-2xl border border-surface-border/60 bg-white px-4 py-3 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.35em] text-brand-secondary">{stat.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-neutral-900">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+<section
+  className="relative w-full min-h-[90vh] overflow-hidden"
+  aria-label="Hero section"
+>
+  {/* Full Width Background Image */}
+  <div className="absolute inset-0 w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
+    <img
+      src={heroImage}
+      alt=""
+      className="h-full w-full object-cover"
+      aria-hidden="true"
+    />
   </div>
+
+  {/* Dark Overlay */}
+  <div className="absolute inset-0 bg-gradient-to-br from-neutral-900/75 via-neutral-900/70 to-neutral-900/80" />
+
+  {/* Content (Normal Container, NOT full-width) */}
+  <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+    <div className="max-w-4xl space-y-8">
+      
+      {/* Badge */}
+      <div className="inline-flex w-fit items-center gap-2 rounded-full border border-blue-400/40 bg-blue-500/20 backdrop-blur-sm px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.35em] text-blue-100 shadow-lg">
+        <span className="h-1.5 w-1.5 rounded-full bg-blue-300" aria-hidden="true" />
+        B2B Marketplace
+      </div>
+
+      {/* Headline */}
+      <h1 className="text-4xl font-bold leading-[1.1] text-white sm:text-5xl lg:text-6xl">
+        Modern procurement experience for ambitious teams.
+      </h1>
+
+      <p className="max-w-3xl text-lg leading-relaxed text-neutral-100 lg:text-xl">
+        Buyers discover vetted products, sellers manage catalogues, and admins retain complete oversight — all in a premium, WCAG compliant interface designed for fast RFQs and confident decisions.
+      </p>
+
+      {/* CTA Buttons */}
+      <div className="flex flex-wrap gap-4 pt-2">
+        <Button
+          as="a"
+          href="/auth/buyer/signup"
+          size="lg"
+          className="min-h-[52px] min-w-[200px] bg-blue-600 px-8 text-base font-semibold text-white shadow-lg hover:bg-blue-700 hover:shadow-xl"
+        >
+          Get started as buyer
+        </Button>
+        <Button
+          as="a"
+          href="/auth/seller/signup"
+          size="lg"
+          className="min-h-[52px] min-w-[200px] bg-gradient-to-r from-[#20B2AA] to-[#008B8B] px-8 text-base font-semibold text-white shadow-lg hover:shadow-xl hover:from-[#1aa497] hover:to-[#007276]"
+        >
+          Onboard as seller
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 gap-4 pt-8 sm:grid-cols-3">
+        {stats.map((stat, index) => (
+          <div
+            key={stat.label}
+            className="rounded-xl border border-white/20 bg-white/10 p-6 backdrop-blur-md shadow-lg hover:bg-white/15 hover:shadow-xl"
+            style={{ animationDelay: `${index * 100}ms` }}
+          >
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-neutral-300">
+              {stat.label}
+            </p>
+            <p className="text-3xl font-bold text-white">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
 )
 
 export default PublicLayout

@@ -25,9 +25,8 @@ const sellers = [
 
 const buyersColumns = [
   { header: 'Buyer Name', accessor: 'name' },
-  { header: 'Contact Email', accessor: 'contact' },
+  { header: 'Email', accessor: 'contact' },
   { header: 'Location', accessor: (row) => `${row.city}, ${row.state}` },
-  { header: 'Registered', accessor: 'registered' },
   {
     header: 'Status',
     accessor: 'status',
@@ -36,7 +35,7 @@ const buyersColumns = [
   {
     header: 'Actions',
     accessor: 'actions',
-    cell: (row) => (
+    cell: () => (
       <Button size="sm" variant="ghost" className="h-7 px-3 text-xs text-status-danger hover:bg-status-danger/10">
         Block
       </Button>
@@ -46,10 +45,8 @@ const buyersColumns = [
 
 const sellersColumns = [
   { header: 'Seller Name', accessor: 'name' },
-  { header: 'Contact Email', accessor: 'contact' },
+  { header: 'Email', accessor: 'contact' },
   { header: 'Location', accessor: (row) => `${row.city}, ${row.state}` },
-  { header: 'GST Number', accessor: 'gst' },
-  { header: 'Registered', accessor: 'registered' },
   {
     header: 'Status',
     accessor: 'status',
@@ -80,7 +77,9 @@ const sellersColumns = [
 
 const UserManagement = ({ scope }) => {
   const [searchQuery, setSearchQuery] = useState('')
-  const isSellers = scope === 'sellers'
+  const [activeTab, setActiveTab] = useState(scope === 'sellers' ? 'seller' : 'buyer')
+
+  const isSellers = activeTab === 'seller'
   const data = isSellers ? sellers : buyers
   const columns = isSellers ? sellersColumns : buyersColumns
 
@@ -91,16 +90,54 @@ const UserManagement = ({ scope }) => {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-0">
+      {/* Tabs */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="inline-flex rounded-t-2xl border border-blue-100 bg-white/90 p-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('buyer')}
+            className={`min-w-[120px] rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+              !isSellers
+                ? 'bg-gradient-to-r from-blue-300 to-sky-300 text-black'
+                : 'text-neutral-600 hover:bg-blue-50'
+            }`}
+          >
+            Buyers
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('seller')}
+            className={`min-w-[120px] rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+              isSellers
+                ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-black'
+                : 'text-neutral-600 hover:bg-emerald-50'
+            }`}
+          >
+            Sellers
+          </button>
+        </div>
+        <div className="hidden text-xs text-neutral-500 sm:block">
+          {isSellers
+            ? `${sellers.length} sellers • ${sellers.filter((s) => s.status === 'Pending').length} pending approvals`
+            : `${buyers.length} active buyers`}
+        </div>
+      </div>
+
       <Card
-        title={isSellers ? 'Sellers Management' : 'Buyers Management'}
-        subtitle={isSellers ? `${sellers.length} sellers • ${sellers.filter((s) => s.status === 'Pending').length} pending approvals` : `${buyers.length} active buyers`}
+        title={isSellers ? 'Seller accounts' : 'Buyer accounts'}
+        subtitle={
+          isSellers
+            ? 'Review, approve, or block seller organisations.'
+            : 'Monitor verified buying organisations on the marketplace.'
+        }
+        className="rounded-tl-none"
       >
         <div className="mb-6">
           <FormField
             id="userSearch"
             name="userSearch"
-            label="Search buyers"
+            label={`Search ${isSellers ? 'sellers' : 'buyers'}`}
             type="text"
             placeholder="Search by name, email, or location..."
             value={searchQuery}

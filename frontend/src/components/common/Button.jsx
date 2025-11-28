@@ -1,14 +1,21 @@
 import PropTypes from 'prop-types'
 
+// Enterprise-grade, accessible base styles
 const baseClasses =
-  'inline-flex items-center justify-center font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:opacity-60'
+  'inline-flex items-center justify-center font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
 
 const variants = {
-  primary: 'bg-brand-primary text-white hover:bg-brand-primary/95 active:bg-brand-primary active:scale-[0.98] focus-visible:outline-brand-primary shadow-[0_2px_8px_rgba(15,98,254,0.2)] hover:shadow-[0_4px_16px_rgba(15,98,254,0.3)] transition-all duration-200',
+  // Primary: solid brand CTA
+  primary:
+    'bg-brand-primary text-white shadow-[0_2px_8px_rgba(15,98,254,0.25)] hover:bg-brand-primary/95 hover:shadow-[0_4px_14px_rgba(15,98,254,0.35)] active:bg-brand-primary active:scale-[0.98] focus-visible:ring-brand-primary',
+
+  // Secondary: soft filled button with subtle border (neutral/secondary actions)
   secondary:
-    'bg-teal-50/80 text-teal-700 border border-teal-200/60 hover:bg-teal-100/90 hover:border-teal-300 active:bg-teal-200 active:scale-[0.98] focus-visible:outline-teal-500 shadow-sm hover:shadow-md transition-all duration-200',
-  ghost: 'bg-transparent text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 focus-visible:outline-neutral-500 transition-all duration-200',
-  danger: 'bg-status-danger text-white hover:bg-status-danger/90 active:bg-status-danger/95 active:scale-[0.98] focus-visible:outline-status-danger shadow-sm hover:shadow-md transition-all duration-200',
+    'bg-white text-neutral-900 border border-neutral-300 shadow-sm hover:bg-neutral-50 hover:border-neutral-400 active:bg-neutral-100 active:scale-[0.98] focus-visible:ring-neutral-400',
+
+  // Outline: minimal button for tertiary / ghost-style actions
+  outline:
+    'bg-transparent text-neutral-800 border border-neutral-300 hover:bg-neutral-50 active:bg-neutral-100 focus-visible:ring-neutral-400',
 }
 
 const sizes = {

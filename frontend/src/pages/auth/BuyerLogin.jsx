@@ -159,7 +159,7 @@ const BuyerLogin = () => {
         <div className="rounded-[40px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
             {/* Left Column - Login Form */}
-            <div className="p-6 lg:p-8 lg:min-h-[600px] flex flex-col justify-center">
+            <div className="p-6 lg:p-8 lg:min-h-[620px] flex flex-col justify-center">
               {/* Section Header */}
               <div className="mb-5">
                 <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Secure login</h2>

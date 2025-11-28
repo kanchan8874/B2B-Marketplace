@@ -117,7 +117,7 @@ const RFQInbox = () => {
                     <td className="px-4 py-4">
                       <Button
                         size="sm"
-                        variant="ghost"
+                        variant="outline"
                         className="h-8 gap-1.5 rounded-full border border-neutral-200 bg-white/80 px-3 text-xs font-semibold text-neutral-800 hover:border-brand-primary/60 hover:text-brand-primary"
                         onClick={() => navigate(`/seller/rfqs/${rfq.id}/respond`)}
                       >

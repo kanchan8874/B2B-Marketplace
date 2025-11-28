@@ -8,9 +8,14 @@ const footerAllowedPaths = ['/', '/auth/buyer/login', '/auth/seller/login', '/au
 const AppShell = ({ children }) => {
   const { pathname } = useLocation()
   const showFooter = footerAllowedPaths.includes(pathname)
+  const isHomePage = pathname === '/'
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-neutral-50 text-neutral-800">
+    <div
+      className={`relative flex flex-col bg-neutral-50 text-neutral-800 ${
+        isHomePage ? 'h-screen overflow-hidden' : 'min-h-screen'
+      }`}
+    >
       <a
         href="#main"
         className="absolute left-4 top-4 z-50 -translate-y-20 rounded-full bg-brand-primary px-4 py-2 text-sm font-semibold text-white focus:translate-y-0"
@@ -18,7 +23,12 @@ const AppShell = ({ children }) => {
         Skip to content
       </a>
       <Header />
-      <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 pb-4 pt-4 sm:px-6 lg:px-8">
+      <main
+        id="main"
+        className={`flex-1 ${
+          isHomePage ? 'w-full overflow-hidden' : 'mx-auto w-full max-w-7xl px-4 pb-4 pt-4 sm:px-6 lg:px-8'
+        }`}
+      >
         {children}
       </main>
       {showFooter && <Footer />}

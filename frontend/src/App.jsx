@@ -12,11 +12,14 @@ import SellerLogin from './pages/auth/SellerLogin.jsx'
 import SellerDashboard from './pages/seller/Dashboard.jsx'
 import AdminLogin from './pages/auth/AdminLogin.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
+import AdminProfile from './pages/admin/Profile.jsx'
 import CategoryDirectory from './pages/buyer/CategoryDirectory.jsx'
 import ProductListing from './pages/buyer/ProductListing.jsx'
 import ProductDetails from './pages/buyer/ProductDetails.jsx'
 import RFQSubmission from './pages/buyer/RFQSubmission.jsx'
 import RFQCenter from './pages/buyer/RFQCenter.jsx'
+import BuyerProfile from './pages/buyer/Profile.jsx'
+import SellerProfile from './pages/seller/Profile.jsx'
 import ProductCatalog from './pages/seller/ProductCatalog.jsx'
 import ProductEditor from './pages/seller/ProductEditor.jsx'
 import RFQInbox from './pages/seller/RFQInbox.jsx'
@@ -104,6 +107,17 @@ const App = () => (
             }
           />
 
+          <Route
+            path="/buyer/profile"
+            element={
+              <ProtectedRoute allowed={['buyer']}>
+                <BuyerLayout>
+                  <BuyerProfile />
+                </BuyerLayout>
+              </ProtectedRoute>
+            }
+          />
+
           {/* Seller */}
           <Route
             path="/seller/dashboard"
@@ -151,6 +165,16 @@ const App = () => (
               <ProtectedRoute allowed={['seller']}>
                 <SellerLayout>
                   <RFQInbox />
+                </SellerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seller/profile"
+            element={
+              <ProtectedRoute allowed={['seller']}>
+                <SellerLayout>
+                  <SellerProfile />
                 </SellerLayout>
               </ProtectedRoute>
             }
@@ -213,6 +237,16 @@ const App = () => (
               <ProtectedRoute allowed={['admin']}>
                 <AdminLayout>
                   <RFQMonitoring />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/profile"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <AdminProfile />
                 </AdminLayout>
               </ProtectedRoute>
             }

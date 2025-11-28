@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { Mail, Phone, Eye, EyeOff, Lock, Shield, ArrowRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Mail, Phone, Eye, EyeOff, Lock } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -30,6 +30,9 @@ const emailOtpSchema = {
   otpEmail: [emailRule('Email address')],
   otp: [otpRule('OTP')],
 }
+
+const sellerIllustration =
+  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const SellerLogin = () => {
   const [mode, setMode] = useState('password')
@@ -151,19 +154,11 @@ const SellerLogin = () => {
   return (
     <div className="flex justify-center bg-neutral-50 px-4 py-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-4xl my-0">
-        {/* Main Card - Premium Elevated Design */}
-        <div className="rounded-[48px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
-          {/* Header Section */}
-          <div className="px-6 pt-4 pb-4 text-center border-b border-neutral-100/80 shadow-[0_1px_0_0_rgba(15,98,254,0.08)]">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-secondary mb-1.5">SELLER PORTAL</p>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-1 tracking-tight mt-2">Seller Dashboard Access</h1>
-            <p className="text-sm text-neutral-600 font-medium">Manage your product catalog and respond to RFQs efficiently</p>
-          </div>
-
-          {/* Two Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80 [&>*:first-child]:shadow-[inset_-1px_0_0_0_rgba(15,98,254,0.08)] [&>*:last-child]:shadow-[inset_1px_0_0_0_rgba(15,98,254,0.08)]">
+        {/* Main Card - Two Column Layout (Form + Illustration) */}
+        <div className="rounded-[40px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
             {/* Left Column - Login Form */}
-            <div className="p-6 lg:p-7">
+            <div className="p-6 lg:p-8 lg:min-h-[620px] flex flex-col justify-center">
               {/* Section Header */}
               <div className="mb-5">
                 <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Secure login</h2>
@@ -352,61 +347,14 @@ const SellerLogin = () => {
               )}
             </div>
 
-            {/* Right Column - Premium Security Reminders */}
-            <div className="p-6 lg:p-7 flex flex-col justify-center">
-              <div className="rounded-[48px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] p-6 relative min-h-[280px] flex flex-col">
-                {/* Header Section */}
-                <div className="flex items-center gap-3 mb-5 pb-5 border-b border-neutral-100/80">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-primary/10 to-brand-primary/5">
-                    <Shield className="h-5 w-5 text-brand-primary" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-neutral-900 tracking-tight">Security Reminders</h3>
-                    <p className="text-xs text-neutral-500 font-medium mt-0.5">Important security guidelines</p>
-                  </div>
-                </div>
-
-                {/* Content Section */}
-                <div className="flex-1">
-                  <ul className="space-y-3.5">
-                    <li className="flex items-start gap-4 group">
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="h-2 w-2 rounded-full bg-brand-primary shadow-sm group-hover:scale-125 transition-transform duration-200"></div>
-                      </div>
-                      <span className="text-sm text-neutral-700 leading-relaxed font-medium">
-                        Use secure network for sensitive operations.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-4 group">
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="h-2 w-2 rounded-full bg-brand-primary shadow-sm group-hover:scale-125 transition-transform duration-200"></div>
-                      </div>
-                      <span className="text-sm text-neutral-700 leading-relaxed font-medium">
-                        Two-factor authentication available.
-                      </span>
-                    </li>
-                    <li className="flex items-start gap-4 group">
-                      <div className="flex-shrink-0 mt-1">
-                        <div className="h-2 w-2 rounded-full bg-brand-primary shadow-sm group-hover:scale-125 transition-transform duration-200"></div>
-                      </div>
-                      <span className="text-sm text-neutral-700 leading-relaxed font-medium">
-                        All activities are logged for audit.
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Create New Seller Link - Bottom Right Corner */}
-                <div className="absolute bottom-5 right-5">
-                  <Link
-                    to="/auth/seller/signup"
-                    className="flex items-center gap-2 text-sm font-bold text-brand-primary hover:text-brand-primary/80 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:ring-offset-2 rounded-lg transition-all duration-200 group hover:gap-2.5"
-                  >
-                    <span className="tracking-tight">Create new seller</span>
-                    <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
-                  </Link>
-                </div>
-              </div>
+            {/* Right Column - B2B Seller Illustration */}
+            <div className="relative hidden lg:block">
+              <img
+                src={sellerIllustration}
+                alt="Sellers collaborating on product catalog and RFQs"
+                className="h-full w-full object-cover blur-[1px]"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-blue-500/15 to-yellow-300/25 mix-blend-multiply" />
             </div>
           </div>
         </div>

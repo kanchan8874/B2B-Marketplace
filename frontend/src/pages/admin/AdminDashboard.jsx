@@ -53,24 +53,27 @@ const rfqs = [
   },
 ]
 
-const KPICard = ({ icon: Icon, label, value, delta, trend, className = '' }) => (
-  <Card className={`bg-gradient-to-br from-white to-brand-primary/5 ${className}`}>
-    <div className="flex items-start justify-between">
-      <div className="flex-1">
-        <div className="mb-3 flex items-center gap-2">
-          <div className="rounded-lg bg-brand-primary/10 p-2">
-            <Icon className="h-5 w-5 text-brand-primary" aria-hidden="true" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-neutral-500">{label}</p>
-        </div>
-        <p className="text-3xl font-bold text-neutral-900">{value}</p>
-        <div className="mt-2 flex items-center gap-2">
-          {trend && <TrendingUp className="h-4 w-4 text-status-success" aria-hidden="true" />}
-          <p className="text-sm text-neutral-600">{delta}</p>
+const KPICard = ({ icon: Icon, label, value, helper, gradient, borderColor, iconBg, iconColor, textColor }) => (
+  <div
+    className={`group relative overflow-hidden rounded-3xl border-2 ${borderColor} bg-gradient-to-br ${gradient} backdrop-blur-xl p-5 shadow-[0_10px_36px_rgba(0,0,0,0.10)] transition-all duration-300 hover:shadow-[0_14px_50px_rgba(0,0,0,0.16)] hover:scale-[1.01]`}
+  >
+    {/* Subtle glow */}
+    <div className={`absolute -right-7 -top-7 h-20 w-20 rounded-full bg-gradient-to-br ${gradient} opacity-30 blur-2xl`} />
+
+    <div className="relative z-10">
+      <div className="flex items-center justify-between">
+        <div className={`rounded-2xl ${iconBg} p-2.5 ${iconColor} shadow-lg`}>
+          <Icon className="h-5 w-5" aria-hidden="true" />
         </div>
       </div>
+
+      <p className={`mt-4 text-3xl font-bold ${textColor}`}>{value}</p>
+      <p className="mt-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.32em] text-neutral-600">
+        {label}
+      </p>
+      <p className="mt-1.5 text-[0.7rem] text-neutral-500">{helper}</p>
     </div>
-  </Card>
+  </div>
 )
 
 const columnsBuyers = [
@@ -159,36 +162,56 @@ const AdminDashboard = () => {
         icon: Users,
         label: 'Total Buyers',
         value: buyers.length.toLocaleString(),
-        delta: 'All active accounts',
-        trend: true,
+        helper: 'All active accounts',
+        gradient: 'from-blue-700/20 via-blue-400/15 to-blue-500/20',
+        borderColor: 'border-blue-500',
+        iconBg: 'bg-blue-700/20',
+        iconColor: 'text-blue-700',
+        textColor: 'text-blue-700',
       },
       {
         icon: Store,
         label: 'Total Sellers',
         value: sellers.length.toLocaleString(),
-        delta: `${sellers.filter((s) => s.status === 'Pending').length} pending approvals`,
-        trend: false,
+        helper: `${sellers.filter((s) => s.status === 'Pending').length} pending approvals`,
+        gradient: 'from-teal-500/20 via-teal-400/15 to-teal-500/20',
+        borderColor: 'border-teal-500',
+        iconBg: 'bg-teal-500/20',
+        iconColor: 'text-teal-600',
+        textColor: 'text-teal-700',
       },
       {
         icon: Package,
         label: 'Total Products',
         value: products.length.toLocaleString(),
-        delta: 'Live inventory',
-        trend: true,
+        helper: 'Live inventory',
+        gradient: 'from-yellow-500/20 via-yellow-400/15 to-yellow-500/20',
+        borderColor: 'border-yellow-500',
+        iconBg: 'bg-yellow-500/20',
+        iconColor: 'text-yellow-600',
+        textColor: 'text-yellow-700',
       },
       {
         icon: AlertCircle,
         label: 'Pending Approvals',
         value: products.filter((p) => p.status === 'Pending').length.toString(),
-        delta: 'Products awaiting review',
-        trend: false,
+        helper: 'Products awaiting review',
+        gradient: 'from-blue-500/20 via-blue-400/15 to-blue-500/20',
+        borderColor: 'border-blue-500',
+        iconBg: 'bg-blue-500/20',
+        iconColor: 'text-blue-600',
+        textColor: 'text-blue-700',
       },
       {
         icon: FileText,
         label: 'Total RFQs',
         value: rfqs.length.toLocaleString(),
-        delta: `${rfqs.filter((r) => r.status === 'Awaiting response').length} awaiting reply`,
-        trend: true,
+        helper: `${rfqs.filter((r) => r.status === 'Awaiting response').length} awaiting reply`,
+        gradient: 'from-teal-500/20 via-teal-400/15 to-teal-500/20',
+        borderColor: 'border-teal-500',
+        iconBg: 'bg-teal-500/20',
+        iconColor: 'text-teal-600',
+        textColor: 'text-teal-700',
       },
     ],
     []
@@ -201,7 +224,7 @@ const AdminDashboard = () => {
       {/* KPI Overview Cards */}
       <section>
         <h2 className="mb-6 text-xl font-semibold text-neutral-900">Overview Metrics</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {kpis.map((kpi) => (
             <KPICard key={kpi.label} {...kpi} />
           ))}

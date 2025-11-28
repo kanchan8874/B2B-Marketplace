@@ -73,59 +73,17 @@ const SellerDashboardNav = () => {
           <div className="relative" ref={profileRef}>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
               className="flex items-center gap-2 rounded-full border border-neutral-200 bg-white/90 px-3 text-sm font-semibold text-neutral-800 hover:border-brand-primary/60 hover:text-brand-primary max-w-xs"
-              onClick={() => setProfileOpen((open) => !open)}
-              aria-haspopup="dialog"
-              aria-expanded={profileOpen}
-              aria-label="Open seller profile menu"
+              onClick={() => navigate('/seller/profile')}
+              aria-label="Open seller profile page"
             >
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-yellow-400 to-blue-500 text-xs font-semibold uppercase text-white">
                 {(user?.name || 'S')[0]}
               </span>
               <span className="hidden text-xs sm:inline-block">Profile</span>
             </Button>
-
-            {profileOpen && (
-              <div
-                className="absolute right-0 z-30 mt-3 w-80 rounded-3xl border border-neutral-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.16)]"
-                role="dialog"
-                aria-label="Seller profile menu"
-              >
-                <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 via-yellow-400 to-blue-500 text-sm font-semibold uppercase text-white">
-                    {(user?.name || 'S')[0]}
-                  </div>
-                  <div>
-                    <p className="truncate text-sm font-semibold text-neutral-900 leading-tight">
-                      {user?.name || 'seller@atlas.trade'}
-                    </p>
-                    <p className="mt-0.5 text-xs text-neutral-500">Seller · Atlas Trade</p>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 px-4 py-3 text-xs text-neutral-600">
-                  <p className="leading-relaxed">
-                    <span className="font-semibold text-neutral-800">Role:</span> Seller
-                  </p>
-                  <p className="leading-relaxed">
-                    <span className="font-semibold text-neutral-800">Workspace:</span> Catalogues & RFQs
-                  </p>
-                </div>
-
-                <div className="border-t border-neutral-100 px-4 py-3">
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="flex w-full items-center justify-center rounded-full bg-brand-primary text-xs font-semibold text-white hover:bg-brand-primary/90"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

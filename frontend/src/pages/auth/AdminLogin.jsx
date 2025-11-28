@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -12,7 +13,11 @@ const validationSchema = {
   password: [passwordRule('Password')],
 }
 
+const adminIllustration =
+  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
+
 const AdminLogin = () => {
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const { setUser } = useAuth()
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
@@ -32,66 +37,81 @@ const AdminLogin = () => {
   return (
     <div className="flex justify-center bg-neutral-50 px-4 py-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-4xl my-0">
-        <div className="rounded-[48px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
-          <div className="px-6 pt-4 pb-4 text-center border-b border-neutral-100/80 shadow-[0_1px_0_0_rgba(15,98,254,0.08)]">
-            <p className="text-xs font-bold uppercase tracking-[0.35em] text-brand-secondary mb-1.5">ADMIN PORTAL</p>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-1 tracking-tight mt-2">Admin Console Access</h1>
-            <p className="text-sm text-neutral-600 font-medium">Monitor users, catalog, and RFQs from a hardened workspace.</p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80 [&>*:first-child]:shadow-[inset_-1px_0_0_0_rgba(15,98,254,0.08)] [&>*:last-child]:shadow-[inset_1px_0_0_0_rgba(15,98,254,0.08)]">
-            <div className="p-6 lg:p-7">
+        {/* Main Card - Two Column Layout (Form + Illustration) */}
+        <div className="rounded-[40px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
+            {/* Left Column - Login Form */}
+            <div className="p-6 lg:p-8 lg:min-h-[620px] flex flex-col justify-center">
+              {/* Section Header */}
               <div className="mb-5">
                 <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Secure login</h2>
                 <p className="text-xs text-neutral-600 font-medium">Email + password with downstream MFA challenge.</p>
               </div>
 
-              <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+              {/* Login Form */}
+              <form className="mt-1 space-y-4 transition-all duration-200 ease-out" onSubmit={handleSubmit} noValidate>
                 <FormField
                   id="adminEmail"
                   name="email"
                   label="Work email"
                   type="email"
                   required
+                  icon={Mail}
                   value={values.email}
                   onChange={handleChange}
                   onBlur={handleBlur}
+                  placeholder="admin@b2bmarketplace.com"
                   error={errors.email}
+                  wrapperClassName="space-y-2"
                 />
+
                 <FormField
                   id="adminPassword"
                   name="password"
                   label="Password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
+                  icon={Lock}
+                  rightIcon={showPassword ? EyeOff : Eye}
+                  onRightIconClick={() => setShowPassword(!showPassword)}
                   value={values.password}
                   onChange={handleChange}
                   onBlur={handleBlur}
+                  placeholder="Enter your password"
                   error={errors.password}
+                  wrapperClassName="space-y-2"
                 />
+
+                <div className="flex items-center justify-between pt-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-neutral-300 text-brand-primary focus:ring-2 focus:ring-brand-primary/20 cursor-pointer transition-all duration-200 hover:border-brand-primary"
+                    />
+                    <span className="text-sm text-neutral-700 font-medium group-hover:text-neutral-900 transition-colors">Remember me</span>
+                  </label>
+                  <a
+                    href="#"
+                    className="text-sm font-semibold text-brand-primary hover:text-brand-primary/80 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:ring-offset-2 rounded-lg transition-all duration-200 hover:underline"
+                  >
+                    Forgot password?
+                  </a>
+                </div>
+
                 <Button type="submit" size="md" className="w-full mt-2">
                   Enter admin panel
                 </Button>
               </form>
             </div>
 
-            <div className="p-6 lg:p-7 flex flex-col justify-center">
-              <div className="rounded-[36px] bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.08),0_6px_14px_rgba(15,98,254,0.08)] p-6 min-h-[260px] flex flex-col">
-                <div className="flex items-center gap-3 mb-5 pb-5 border-b border-neutral-100/80">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-primary/10 to-brand-primary/5">
-                    <Shield className="h-5 w-5 text-brand-primary" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-neutral-900 tracking-tight">Security reminders</h3>
-                    <p className="text-xs text-neutral-500 font-medium mt-0.5">Applies to all compliance users</p>
-                  </div>
-                </div>
-                <ul className="space-y-3.5 text-sm text-neutral-700 leading-relaxed">
-                  <li>• Access only via whitelisted corporate network or VPN.</li>
-                  <li>• OTP verification and device checks happen post login.</li>
-                  <li>• Every action is logged for audit and anomaly detection.</li>
-                </ul>
-              </div>
+            {/* Right Column - B2B Illustration */}
+            <div className="relative hidden lg:block">
+              <img
+                src={adminIllustration}
+                alt="B2B admin workspace illustration"
+                className="h-full w-full object-cover blur-[1px]"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-yellow-300/35 via-blue-400/15 to-yellow-300/25 mix-blend-multiply" />
             </div>
           </div>
         </div>
