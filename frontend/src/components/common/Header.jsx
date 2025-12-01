@@ -63,10 +63,10 @@ const Header = () => {
                   ? 'bg-gradient-to-r from-[#20B2AA] to-[#008B8B] text-white shadow-[0_8px_20px_rgba(32,178,170,0.45)] hover:from-[#1CA59D] hover:to-[#007A7A]'
                   : 'bg-gradient-to-r from-[#20B2AA] to-[#008B8B] text-white shadow-sm hover:from-[#1CA59D] hover:to-[#007A7A]'
               } else if (item.label === 'Admin Login') {
-                // Solid amber/orange
+                // Softer amber/orange
                 toneClasses = isActive
-                  ? 'bg-gradient-to-r from-[#FACC15] to-[#F97316] text-slate-900 shadow-[0_8px_20px_rgba(250,204,21,0.45)] hover:from-[#FACC15] hover:to-[#EA580C]'
-                  : 'bg-gradient-to-r from-[#FACC15] to-[#F97316] text-slate-900 shadow-sm hover:from-[#FACC15] hover:to-[#EA580C]'
+                  ? 'bg-gradient-to-r from-[#FDE68A] via-[#FACC15] to-[#FBBF24] text-slate-900 shadow-[0_8px_20px_rgba(250,224,120,0.45)] hover:from-[#FACC15] hover:to-[#F59E0B]'
+                  : 'bg-gradient-to-r from-[#FDE68A] via-[#FACC15] to-[#FBBF24] text-slate-900 shadow-sm hover:from-[#FACC15] hover:to-[#F59E0B]'
               }
 
               return (

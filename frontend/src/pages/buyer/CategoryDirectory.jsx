@@ -28,10 +28,10 @@ const CategoryDirectory = () => {
               context to help you shortlist faster.
             </p>
             <div className="flex flex-wrap gap-3">
-              <Button as="a" href="/buyer/products" size="lg" className="px-6">
+              <Button onClick={() => navigate('/buyer/products')} size="lg" className="px-6">
                 Explore products
               </Button>
-              <Button as="a" href="/buyer/rfqs" size="lg" variant="secondary" className="px-6">
+              <Button onClick={() => navigate('/buyer/rfqs')} size="lg" variant="secondary" className="px-6">
                 View RFQ center
               </Button>
             </div>
@@ -60,7 +60,7 @@ const CategoryDirectory = () => {
               return (
                 <div
                   key={stat.label}
-                  className={`group rounded-3xl border bg-gradient-to-br ${toneClasses.bg} p-4 text-center shadow-[0_18px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_22px_60px_rgba(0,0,0,0.12)] hover:scale-[1.02] ${toneClasses.border}`}
+                  className={`group rounded-2xl border bg-gradient-to-br ${toneClasses.bg} p-4 text-center shadow-[0_18px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:shadow-[0_22px_60px_rgba(0,0,0,0.12)] hover:scale-[1.02] ${toneClasses.border}`}
                 >
                   <p className={`text-2xl font-semibold ${toneClasses.value}`}>{stat.value}</p>
                   <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-neutral-600">
@@ -73,11 +73,11 @@ const CategoryDirectory = () => {
         </div>
       </section>
 
-      <section className="rounded-[32px] border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white/95 to-emerald-50/70 p-6 shadow-[0_25px_70px_rgba(16,185,129,0.18)]">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-4xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white/95 to-emerald-50/70 p-8 shadow-[0_25px_70px_rgba(16,185,129,0.18)]">
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-neutral-900">Categories</h2>
-            <p className="text-sm text-neutral-500">Tap any tile to view associated products and send RFQs.</p>
+            <h2 className="text-3xl font-bold text-neutral-900 mb-2">Categories</h2>
+            <p className="text-sm text-neutral-600">Tap any tile to view associated products and send RFQs.</p>
           </div>
           <Button variant="secondary" onClick={() => navigate('/buyer/products')}>
             View all products

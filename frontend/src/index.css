@@ -38,3 +38,8 @@ body,
   backdrop-filter: blur(18px);
 }
 
+/* Hide scrollbar for webkit browsers */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+

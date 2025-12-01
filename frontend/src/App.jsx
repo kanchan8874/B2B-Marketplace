@@ -24,9 +24,11 @@ import ProductCatalog from './pages/seller/ProductCatalog.jsx'
 import ProductEditor from './pages/seller/ProductEditor.jsx'
 import RFQInbox from './pages/seller/RFQInbox.jsx'
 import RFQResponse from './pages/seller/RFQResponse.jsx'
+import SellerProductView from './pages/seller/ProductView.jsx'
 import UserManagement from './pages/admin/UserManagement.jsx'
 import ProductModeration from './pages/admin/ProductModeration.jsx'
 import RFQMonitoring from './pages/admin/RFQMonitoring.jsx'
+import AdminProductView from './pages/admin/ProductView.jsx'
 import ProtectedRoute from './components/common/ProtectedRoute.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { RFQProvider } from './context/RFQContext.jsx'
@@ -160,6 +162,16 @@ const App = () => (
             }
           />
           <Route
+            path="/seller/products/:productId/view"
+            element={
+              <ProtectedRoute allowed={['seller']}>
+                <SellerLayout>
+                  <SellerProductView />
+                </SellerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/seller/rfqs"
             element={
               <ProtectedRoute allowed={['seller']}>
@@ -227,6 +239,16 @@ const App = () => (
               <ProtectedRoute allowed={['admin']}>
                 <AdminLayout>
                   <ProductModeration />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/products/:productId/view"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <AdminProductView />
                 </AdminLayout>
               </ProtectedRoute>
             }

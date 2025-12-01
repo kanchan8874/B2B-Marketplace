@@ -44,9 +44,9 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-      <div className="grid gap-5 md:grid-cols-2">
-        <div className="space-y-4">
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
             Catalogue basics
           </p>
@@ -61,7 +61,7 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
             onBlur={handleBlur}
             error={errors.name}
           />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             <FormField
               id="category"
               name="category"
@@ -85,11 +85,11 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
             Commercials
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             <FormField
               id="priceMin"
               name="priceMin"
@@ -140,12 +140,12 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
         helper="Highlight specifications, certifications, and packaging in 2–4 crisp lines."
       />
 
-      <div className="grid gap-6 md:grid-cols-[1.1fr,0.9fr]">
-        <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-[1.1fr,0.9fr]">
+        <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
             Inventory & logistics
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             <FormField
               id="sku"
               name="sku"
@@ -179,7 +179,7 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
           />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
             Media upload
           </p>
