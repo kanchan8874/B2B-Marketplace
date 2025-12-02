@@ -5,6 +5,7 @@ import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
 import RFQList from '../../components/seller/RFQList.jsx'
 import ProductStatusBadge from '../../components/seller/ProductStatusBadge.jsx'
+import SubscriptionTierCard from '../../components/seller/SubscriptionTierCard.jsx'
 import { products } from '../../mocks/products.js'
 import { rfqs } from '../../mocks/rfqs.js'
 
@@ -94,6 +95,9 @@ const SellerDashboard = () => {
           )
         })}
       </section>
+
+      {/* Subscription Tier Card */}
+      <SubscriptionTierCard />
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr] items-start">
         <Card

@@ -1,12 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Building2, MapPin, Phone } from 'lucide-react'
+import { User, Building2, MapPin, Phone, Bell } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
+import VerifiedBadge from '../../components/common/VerifiedBadge.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
+import { getSellerKYC } from '../../services/kycService.js'
 
 const SellerProfile = () => {
   const { user, setUser } = useAuth()
+  const [isVerified, setIsVerified] = useState(false)
 
   const [form, setForm] = useState({
     name: user?.name || '',
@@ -18,6 +21,29 @@ const SellerProfile = () => {
     note: '',
   })
 
+  const [notifications, setNotifications] = useState({
+    emailOnNewMessage: true,
+    emailOnKycStatus: true,
+    emailOnProductModeration: true,
+  })
+
+  useEffect(() => {
+    // Check verification status
+    const checkVerification = async () => {
+      try {
+        const response = await getSellerKYC()
+        if (response.data && response.data.status === 'Approved') {
+          setIsVerified(true)
+        }
+      } catch (error) {
+        console.error('Failed to check verification status:', error)
+      }
+    }
+    if (user?.role === 'seller') {
+      checkVerification()
+    }
+  }, [user])
+
   const handleChange = (field) => (event) => {
     const { value } = event.target
     setUser && setUser({ ...(user || {}), [field]: value })
@@ -27,6 +53,12 @@ const SellerProfile = () => {
   const handleSubmit = (event) => {
     event.preventDefault()
     // TODO: integrate with backend seller profile API
+    setUser?.({
+      ...(user || {}),
+      name: form.name,
+      email: form.email,
+      notificationPreferences: notifications,
+    })
   }
 
   const handleLogout = () => {
@@ -48,9 +80,16 @@ const SellerProfile = () => {
                 <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
                   Seller profile
                 </p>
-                <h1 className="truncate text-xl sm:text-2xl font-semibold leading-snug">
-                  {form.name || user?.name || 'Your full name'}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="truncate text-xl sm:text-2xl font-semibold leading-snug">
+                    {form.name || user?.name || 'Your full name'}
+                  </h1>
+                  {isVerified && (
+                    <div className="flex-shrink-0">
+                      <VerifiedBadge size="sm" className="text-white" />
+                    </div>
+                  )}
+                </div>
                 <p className="truncate text-xs text-emerald-100">
                   {form.email || user?.email || 'seller@company.com'}
                 </p>
@@ -140,6 +179,54 @@ const SellerProfile = () => {
             wrapperClassName="!space-y-1 text-xs"
             inputClassName="text-sm"
           />
+
+          {/* Notification preferences */}
+          <div className="mt-2 rounded-2xl border border-emerald-100 bg-white/80 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-600">
+                Email notifications
+              </p>
+            </div>
+            <fieldset className="space-y-2" aria-label="Seller email notification preferences">
+              <label className="flex items-center justify-between gap-3 text-xs text-neutral-700">
+                <span>New messages from buyers</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-7 cursor-pointer rounded-full border-neutral-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400/40"
+                  checked={notifications.emailOnNewMessage}
+                  onChange={(e) =>
+                    setNotifications((prev) => ({ ...prev, emailOnNewMessage: e.target.checked }))
+                  }
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-xs text-neutral-700">
+                <span>KYC status updates</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-7 cursor-pointer rounded-full border-neutral-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400/40"
+                  checked={notifications.emailOnKycStatus}
+                  onChange={(e) =>
+                    setNotifications((prev) => ({ ...prev, emailOnKycStatus: e.target.checked }))
+                  }
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-xs text-neutral-700">
+                <span>Product approval & moderation</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-7 cursor-pointer rounded-full border-neutral-300 text-emerald-600 focus:ring-2 focus:ring-emerald-400/40"
+                  checked={notifications.emailOnProductModeration}
+                  onChange={(e) =>
+                    setNotifications((prev) => ({
+                      ...prev,
+                      emailOnProductModeration: e.target.checked,
+                    }))
+                  }
+                />
+              </label>
+            </fieldset>
+          </div>
 
           <div className="mt-1.5 flex flex-col gap-2.5 border-t border-emerald-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-neutral-500">

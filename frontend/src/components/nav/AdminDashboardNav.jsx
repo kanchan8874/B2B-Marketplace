@@ -1,63 +1,146 @@
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Logo from '../common/Logo.jsx'
 import Button from '../common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
+import { ChevronDown } from 'lucide-react'
 
 const adminLinks = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Users Management', href: '/admin/users' },
   { label: 'Products Management', href: '/admin/products' },
+  { label: 'Subscription Management', href: '/admin/subscriptions' },
   { label: 'RFQ Monitor', href: '/admin/rfqs' },
+  { label: 'Message Oversight', href: '/admin/messages' },
+  { label: 'Seller KYC', href: '/admin/kyc/sellers' },
+  { label: 'Buyer KYC', href: '/admin/kyc/buyers' },
 ]
+
+const linkBaseClasses =
+  'relative inline-flex items-center justify-center px-2 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-secondary'
 
 const AdminDashboardNav = () => {
   const { setUser } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [kycOpen, setKycOpen] = useState(false)
+
+  const desktopLinks = adminLinks.filter(
+    (link) => link.href !== '/admin/kyc/sellers' && link.href !== '/admin/kyc/buyers',
+  )
+  const kycLinks = adminLinks.filter((link) => link.href.startsWith('/admin/kyc/'))
+  const isKycActive = location.pathname.startsWith('/admin/kyc')
 
   const handleProfileClick = () => {
     navigate('/admin/profile')
   }
 
   return (
-    <header className="rounded-[28px] border border-surface-border bg-gradient-to-r from-white via-blue-50/60 to-emerald-50/70 px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.10)] sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
+    <header className="w-full rounded-3xl border-b border-surface-border bg-gradient-to-r from-white via-blue-50/40 to-emerald-50/40 px-4 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.05)] sm:px-6 lg:px-10">
+      {/* Outer shell uses ~8pt grid (16px base spacing) */}
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-6 lg:h-16">
+        {/* Left: Logo + title + description */}
+        <div className="flex min-w-0 items-center gap-3">
           <Logo compact />
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-brand-secondary">Admin console</p>
-            <p className="text-sm text-neutral-600">Control users, products, and RFQs in one place.</p>
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-brand-secondary">
+              Admin Panel
+            </p>
+            
           </div>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <nav className="flex flex-wrap items-center gap-2" aria-label="Admin dashboard">
-            {adminLinks.map((link) => (
+
+        {/* Center: main navigation tabs (single row) */}
+        <nav className="hidden flex-1 items-center justify-start lg:flex" aria-label="Admin primary navigation">
+          <div className="flex flex-nowrap items-center gap-6">
+            {desktopLinks.map((link) => (
               <NavLink
                 key={link.href}
                 to={link.href}
-                className={({ isActive }) =>
-                  [
-                    'rounded-full px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-secondary/40',
-                    isActive
-                      ? 'bg-brand-secondary/10 text-brand-secondary shadow-sm'
-                      : 'text-neutral-600 hover:text-brand-secondary hover:bg-white/70',
-                  ].join(' ')
-                }
+                className={({ isActive }) => {
+                  const activeClasses = 'text-brand-secondary border-b-2 border-brand-secondary pb-1'
+                  const inactiveClasses = 'text-neutral-700 hover:text-brand-secondary'
+                  return `${linkBaseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                }}
               >
-                {link.label}
+                <span className="px-0.5">{link.label}</span>
               </NavLink>
             ))}
-          </nav>
+
+            {/* KYC dropdown for desktop */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setKycOpen((open) => !open)}
+                onBlur={() => setTimeout(() => setKycOpen(false), 150)}
+                className={`${linkBaseClasses} ${
+                  isKycActive ? 'text-brand-secondary border-b-2 border-brand-secondary pb-1' : 'text-neutral-700'
+                }`}
+              >
+                <span className="px-0.5">KYC</span>
+                <ChevronDown className="ml-1 h-4 w-4" aria-hidden="true" />
+              </button>
+              {kycOpen && (
+                <div className="absolute left-0 z-40 mt-2 w-56 rounded-2xl border border-neutral-200 bg-white py-2 shadow-[0_12px_30px_rgba(15,23,42,0.15)]">
+                  {kycLinks.map((link) => (
+                    <NavLink
+                      key={link.href}
+                      to={link.href}
+                      onClick={() => setKycOpen(false)}
+                      className={({ isActive }) =>
+                        `flex w-full items-center px-4 py-2 text-sm ${
+                          isActive ? 'bg-blue-50 text-brand-secondary font-semibold' : 'text-neutral-800 hover:bg-neutral-50'
+                        }`
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </nav>
+
+        {/* Right: profile */}
+        <div className="flex shrink-0 items-center gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="rounded-full border border-neutral-300 px-5 text-sm font-semibold text-neutral-700 hover:border-brand-secondary hover:text-brand-secondary hover:bg-white"
+            className="inline-flex items-center gap-2 rounded-full border border-neutral-300 bg-white/90 px-4 py-2 text-xs font-semibold text-neutral-800 shadow-[0_8px_20px_rgba(15,23,42,0.06)] hover:border-brand-secondary hover:text-brand-secondary hover:bg-white"
             onClick={handleProfileClick}
+            aria-label="Open admin profile"
           >
-            Profile
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 via-emerald-400 to-teal-500 text-xs font-bold uppercase text-white">
+              A
+            </span>
+            <span className="hidden sm:inline-block">Profile</span>
           </Button>
         </div>
       </div>
+
+      {/* Mobile nav (stacked) */}
+      <nav
+        className="mt-3 flex flex-wrap items-center gap-2 lg:hidden"
+        aria-label="Admin primary navigation mobile"
+      >
+        {adminLinks.map((link) => (
+          <NavLink
+            key={link.href}
+            to={link.href}
+            className={({ isActive }) => {
+              const activeClasses =
+                'text-brand-secondary border-b-2 border-brand-secondary pb-1'
+              const inactiveClasses =
+                'text-neutral-700 bg-white/80 hover:text-brand-secondary hover:bg-blue-50/80 border border-neutral-200'
+              return `${linkBaseClasses} ${isActive ? activeClasses : inactiveClasses}`
+            }}
+          >
+            {link.label}
+          </NavLink>
+        ))}
+      </nav>
     </header>
   )
 }

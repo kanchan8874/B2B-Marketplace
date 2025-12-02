@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import Button from '../common/Button.jsx'
+import VerifiedBadge from '../common/VerifiedBadge.jsx'
 
 const fallbackImages = {
   'Food & Agriculture': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=900&q=80',
@@ -55,7 +56,10 @@ const ProductCard = ({ product }) => (
       </div>
 
       <div className="rounded-2xl border border-white/70 bg-white/80 p-3 text-xs text-neutral-600 shadow-[0_8px_25px_rgba(15,23,42,0.06)]">
-        <p className="font-semibold text-neutral-900">{product.seller}</p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="font-semibold text-neutral-900">{product.seller}</p>
+          {product.sellerVerified && <VerifiedBadge size="sm" showText={false} />}
+        </div>
         <p className="mt-0.5">
           {product.city}, {product.state}
         </p>
@@ -97,6 +101,7 @@ ProductCard.propTypes = {
     state: PropTypes.string.isRequired,
     gallery: PropTypes.arrayOf(PropTypes.string).isRequired,
     categoryLabel: PropTypes.string,
+    sellerVerified: PropTypes.bool,
   }).isRequired,
 }
 

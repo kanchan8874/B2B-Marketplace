@@ -5,6 +5,7 @@ import { Product } from '../models/Product.js'
 import { RFQ } from '../models/RFQ.js'
 import { success } from '../utils/ApiResponse.js'
 import { catchAsync } from '../utils/catchAsync.js'
+import { sendProductModerationEmail, shouldSendEmailForUser } from '../services/emailService.js'
 
 export const adminValidation = {
   updateUserStatus: Joi.object({
@@ -51,7 +52,28 @@ export const listPendingProducts = catchAsync(async (req, res) => {
 })
 
 export const moderateProduct = catchAsync(async (req, res) => {
-  const product = await Product.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true })
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    { status: req.body.status },
+    { new: true },
+  ).populate('seller', 'name email')
+
+  // Fire-and-forget email to seller about moderation result
+  if (product?.seller?.email && shouldSendEmailForUser(product.seller, 'product')) {
+    try {
+      await sendProductModerationEmail({
+        to: product.seller.email,
+        sellerName: product.seller.name,
+        productName: product.name,
+        status: product.status,
+      })
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[email] Failed to send product moderation email', error)
+      }
+    }
+  }
+
   return res.status(StatusCodes.OK).json(success(product, 'Product updated'))
 })
 

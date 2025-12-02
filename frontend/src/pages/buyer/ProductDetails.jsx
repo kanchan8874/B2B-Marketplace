@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Star, Truck, Tag, Heart, ShoppingBag, Check } from 'lucide-react'
+import { ArrowLeft, Star, Truck, Tag, Heart, ShoppingBag, Check, MessageCircle } from 'lucide-react'
 import Button from '../../components/common/Button.jsx'
+import VerifiedBadge from '../../components/common/VerifiedBadge.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import { products } from '../../mocks/products.js'
 import { categories } from '../../mocks/categories.js'
@@ -156,6 +157,15 @@ const ProductDetails = () => {
               Send RFQ
             </Button>
             <Button
+              onClick={() => navigate(`/buyer/messages/contact?productId=${product.id}`)}
+              variant="secondary"
+              size="lg"
+              className="flex-1 flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Contact Seller
+            </Button>
+            <Button
               variant="secondary"
               size="lg"
               className="px-6 flex items-center justify-center gap-2"
@@ -228,7 +238,10 @@ const ProductDetails = () => {
           {/* Seller Information */}
           <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/40 via-white/95 to-teal-50/40 p-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Seller Information</p>
-            <p className="text-base font-semibold text-neutral-900 mb-1">{product.seller}</p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-base font-semibold text-neutral-900">{product.seller}</p>
+              {product.sellerVerified && <VerifiedBadge size="sm" />}
+            </div>
             <p className="text-sm text-neutral-600">
               {product.city}, {product.state}
             </p>
@@ -238,6 +251,33 @@ const ProductDetails = () => {
               </p>
             )}
           </div>
+
+          {/* Commercial Terms */}
+          {(product.priceValidityDate || product.paymentTerms || product.shipmentMode) && (
+            <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/40 via-white/95 to-emerald-50/40 p-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Commercial Terms</p>
+              {product.priceValidityDate && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600">Price Validity:</span>
+                  <span className="font-semibold text-neutral-900">
+                    {new Date(product.priceValidityDate).toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+              {product.paymentTerms && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600">Payment Terms:</span>
+                  <span className="font-semibold text-neutral-900">{product.paymentTerms}</span>
+                </div>
+              )}
+              {product.shipmentMode && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-600">Shipment Mode:</span>
+                  <span className="font-semibold text-neutral-900">{product.shipmentMode}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Product Tags */}
           {product.tags && product.tags.length > 0 && (

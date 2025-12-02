@@ -4,6 +4,7 @@ const statusMap = {
   Draft: 'bg-neutral-100 text-neutral-600',
   Live: 'bg-status-success/10 text-status-success',
   Pending: 'bg-brand-accent/10 text-brand-accent',
+  'To Be Offered': 'bg-yellow-100 text-yellow-800',
 }
 
 const ProductStatusBadge = ({ status }) => (

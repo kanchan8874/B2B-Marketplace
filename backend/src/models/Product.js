@@ -12,9 +12,21 @@ const productSchema = new mongoose.Schema(
     moq: { type: Number, required: true },
     status: {
       type: String,
-      enum: ['Draft', 'Pending', 'Live'],
+      enum: ['Draft', 'Pending', 'Live', 'To Be Offered'],
       default: 'Pending',
       index: true,
+    },
+    priceValidityDate: {
+      type: Date,
+      index: true,
+    },
+    paymentTerms: {
+      type: String,
+      enum: ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Advance', 'COD', 'Other'],
+    },
+    shipmentMode: {
+      type: String,
+      enum: ['Road', 'Rail', 'Air', 'Sea', 'Express', 'Other'],
     },
     tags: [{ type: String }],
     images: [{ type: String }],

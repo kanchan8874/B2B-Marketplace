@@ -2,9 +2,9 @@ import { NavLink } from 'react-router-dom'
 import Logo from './Logo.jsx'
 
 const footerLinks = [
-  { label: 'Accessibility', href: '#accessibility' },
-  { label: 'Privacy', href: '#privacy' },
-  { label: 'Terms', href: '#terms' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Data & KYC', href: '/data-kyc' },
+  { label: 'Terms', href: '/terms' },
 ]
 
 const Footer = () => (
@@ -21,17 +21,17 @@ const Footer = () => (
         <span className="font-semibold text-neutral-800">© {new Date().getFullYear()} Atlas Trade.</span>{' '}
         <span className="text-neutral-500"> All Rights Reserved. B2B Marketplace.</span>
       </p>
-      <div className="flex items-center justify-center gap-4 sm:justify-end">
+      <nav className="flex items-center justify-center gap-4 sm:justify-end" aria-label="Legal links">
         {footerLinks.map((link) => (
-          <a
+          <NavLink
             key={link.label}
             className="font-semibold text-neutral-700 hover:text-brand-primary focus-visible:text-brand-primary"
-            href={link.href}
+            to={link.href}
           >
             {link.label}
-          </a>
+          </NavLink>
         ))}
-      </div>
+      </nav>
     </div>
   </footer>
 )

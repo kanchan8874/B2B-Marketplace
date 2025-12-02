@@ -147,7 +147,9 @@ const SellerLogin = () => {
   }
 
   const completeLogin = (name = 'Seller Ops') => {
-    setUser?.({ name, role: 'seller' })
+    if (setUser) {
+      setUser({ name, role: 'seller' })
+    }
     navigate('/seller/dashboard')
   }
 
@@ -155,7 +157,7 @@ const SellerLogin = () => {
     <div className="flex justify-center bg-neutral-50 px-4 py-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-4xl my-0">
         {/* Main Card - Two Column Layout (Form + Illustration) */}
-        <div className="rounded-4xl bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
+        <div className="rounded-3xl bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
             {/* Left Column - Login Form */}
             <div className="p-6 lg:p-8 lg:min-h-[620px] flex flex-col justify-center">
@@ -348,11 +350,14 @@ const SellerLogin = () => {
             </div>
 
             {/* Right Column - B2B Seller Illustration */}
-            <div className="relative hidden lg:block">
+            <div className="relative hidden lg:block min-h-[620px] bg-gradient-to-br from-emerald-100 via-blue-50 to-yellow-50">
               <img
                 src={sellerIllustration}
                 alt="Sellers collaborating on product catalog and RFQs"
-                className="h-full w-full object-cover blur-[1px]"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                }}
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-blue-500/15 to-yellow-300/25 mix-blend-multiply" />
             </div>

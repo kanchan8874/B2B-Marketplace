@@ -14,6 +14,11 @@ export const profileValidation = {
         state: Joi.string().allow('', null),
         country: Joi.string().allow('', null),
       }).optional(),
+      notificationPreferences: Joi.object({
+        emailOnNewMessage: Joi.boolean(),
+        emailOnKycStatus: Joi.boolean(),
+        emailOnProductModeration: Joi.boolean(),
+      }).optional(),
     }).required(),
   }),
 }

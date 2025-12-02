@@ -16,6 +16,9 @@ const initialState = {
   sku: '',
   stock: '',
   subcategory: '',
+  priceValidityDate: '',
+  paymentTerms: '',
+  shipmentMode: '',
 }
 
 const validationSchema = {
@@ -124,7 +127,56 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
             onBlur={handleBlur}
             error={errors.moq}
           />
+          <FormField
+            id="priceValidityDate"
+            name="priceValidityDate"
+            label="Price validity date"
+            type="date"
+            value={values.priceValidityDate}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            helper="Price will auto-switch to 'To Be Offered' after this date"
+          />
         </div>
+      </div>
+
+      {/* Payment Terms & Shipment Mode */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <FormField
+          id="paymentTerms"
+          name="paymentTerms"
+          label="Standard payment terms"
+          as="select"
+          value={values.paymentTerms}
+          onChange={handleChange}
+          onBlur={handleBlur}
+        >
+          <option value="">Select payment terms</option>
+          <option value="Net 15">Net 15</option>
+          <option value="Net 30">Net 30</option>
+          <option value="Net 45">Net 45</option>
+          <option value="Net 60">Net 60</option>
+          <option value="Advance">Advance</option>
+          <option value="COD">COD</option>
+          <option value="Other">Other</option>
+        </FormField>
+        <FormField
+          id="shipmentMode"
+          name="shipmentMode"
+          label="Standard shipment mode"
+          as="select"
+          value={values.shipmentMode}
+          onChange={handleChange}
+          onBlur={handleBlur}
+        >
+          <option value="">Select shipment mode</option>
+          <option value="Road">Road</option>
+          <option value="Rail">Rail</option>
+          <option value="Air">Air</option>
+          <option value="Sea">Sea</option>
+          <option value="Express">Express</option>
+          <option value="Other">Other</option>
+        </FormField>
       </div>
 
       <FormField

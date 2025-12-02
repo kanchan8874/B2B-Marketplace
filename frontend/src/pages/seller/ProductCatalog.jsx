@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Crown, AlertCircle } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
 import ProductListTable from '../../components/seller/ProductListTable.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
 import { products } from '../../mocks/products.js'
+import { getSellerSubscription } from '../../services/subscriptionService.js'
 
 const ITEMS_PER_PAGE = 7
 
@@ -13,6 +15,7 @@ const ProductCatalog = () => {
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState('All')
+  const [subscription, setSubscription] = useState(null)
   const [items, setItems] = useState(() =>
     products.map((product) => {
       const statuses = ['Live', 'Pending', 'Draft']
@@ -25,6 +28,21 @@ const ProductCatalog = () => {
   )
   const [productToDelete, setProductToDelete] = useState(null)
   const [lastDeleted, setLastDeleted] = useState(null)
+
+  useEffect(() => {
+    loadSubscription()
+  }, [])
+
+  const loadSubscription = async () => {
+    try {
+      const response = await getSellerSubscription()
+      if (response.data) {
+        setSubscription(response.data)
+      }
+    } catch (error) {
+      console.error('Failed to load subscription:', error)
+    }
+  }
 
   const filteredItems =
     statusFilter === 'All' ? items : items.filter((product) => product.status === statusFilter)
@@ -80,6 +98,49 @@ const ProductCatalog = () => {
 
   return (
     <div className="space-y-6">
+      {/* Subscription Info Banner */}
+      {subscription && (
+        <div
+          className={`rounded-2xl border-2 p-4 ${
+            subscription.tier === 'Silver'
+              ? 'border-neutral-300 bg-neutral-50'
+              : subscription.tier === 'Gold'
+                ? 'border-yellow-300 bg-yellow-50'
+                : 'border-purple-300 bg-purple-50'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Crown
+                className={`h-5 w-5 ${
+                  subscription.tier === 'Silver'
+                    ? 'text-neutral-600'
+                    : subscription.tier === 'Gold'
+                      ? 'text-yellow-700'
+                      : 'text-purple-700'
+                }`}
+              />
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">
+                  {subscription.tier} Tier · {subscription.currentProductCount} / {subscription.productLimit} products
+                </p>
+                <p className="text-xs text-neutral-600">
+                  {subscription.remainingSlots > 0
+                    ? `${subscription.remainingSlots} slot${subscription.remainingSlots > 1 ? 's' : ''} remaining`
+                    : 'Limit reached'}
+                </p>
+              </div>
+            </div>
+            {!subscription.canAddMore && (
+              <div className="flex items-center gap-2 text-xs text-rose-700">
+                <AlertCircle className="h-4 w-4" />
+                <span className="font-semibold">Upgrade to add more</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <Card
         title="Product catalogue"
         subtitle="Keep pricing transparent and MOQ updated."
@@ -113,7 +174,9 @@ const ProductCatalog = () => {
                 )
               })}
             </div>
-            <Button onClick={handleAddProduct}>Add product</Button>
+            <Button onClick={handleAddProduct} disabled={subscription && !subscription.canAddMore}>
+              Add product
+            </Button>
           </div>
         }
         className="border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 shadow-[0_20px_60px_rgba(37,99,235,0.14)]"

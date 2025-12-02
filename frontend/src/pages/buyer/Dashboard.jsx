@@ -339,6 +339,85 @@ const Dashboard = () => {
         })}
       </section>
 
+      {/* Trending products moved just below KPIs for higher prominence */}
+      <Card
+        title="Trending products"
+        subtitle="What other buyers are actively shortlisting this week."
+        className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
+      >
+        <div
+          className="relative"
+          onMouseEnter={() => setTrendingIsPaused(true)}
+          onMouseLeave={() => setTrendingIsPaused(false)}
+        >
+          <div
+            ref={trendingCarouselRef}
+            onScroll={checkTrendingScrollButtons}
+            className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {trendingProducts.map((product) => {
+              const productImage =
+                product.gallery?.[0] ||
+                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
+
+              return (
+                <button
+                  key={product.id}
+                  onClick={() => navigate(`/buyer/products/${product.id}`)}
+                  className="group relative flex-shrink-0 w-[280px] aspect-square overflow-hidden rounded-4xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-[1.02] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                >
+                  <div className="relative h-full w-full overflow-hidden">
+                    <img
+                      src={productImage}
+                      alt={product.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      onError={(e) => {
+                        e.target.src =
+                          'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
+
+                    <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                        Trending
+                      </span>
+                      <h3 className="mt-2 text-sm font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] line-clamp-2">
+                        {product.name}
+                      </h3>
+                      <p className="mt-1 text-[11px] font-medium text-emerald-100">
+                        ₹{product.priceMin.toLocaleString()} – ₹{product.priceMax.toLocaleString()} · MOQ{' '}
+                        {product.moq.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {trendingCanScrollLeft && (
+            <button
+              onClick={() => scrollTrendingCarousel('left')}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white border-2 border-neutral-300 shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_8px_rgba(0,0,0,0.1)] hover:bg-neutral-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.15)] hover:border-neutral-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Scroll trending products left"
+            >
+              <ChevronLeft className="h-5 w-5 text-neutral-800" />
+            </button>
+          )}
+          {trendingCanScrollRight && (
+            <button
+              onClick={() => scrollTrendingCarousel('right')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white border-2 border-neutral-300 shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_8px_rgba(0,0,0,0.1)] hover:bg-neutral-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.15)] hover:border-neutral-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              aria-label="Scroll trending products right"
+            >
+              <ChevronRight className="h-5 w-5 text-neutral-800" />
+            </button>
+          )}
+        </div>
+      </Card>
+
       <Card
         title="Browse categories"
         subtitle="Navigate by business function or commodity cluster."
@@ -581,84 +660,6 @@ const Dashboard = () => {
         </div>
       </Card>
 
-      {/* Trending products section - horizontal carousel like Browse categories */}
-      <Card
-        title="Trending products"
-        subtitle="What other buyers are actively shortlisting this week."
-        className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
-      >
-        <div
-          className="relative"
-          onMouseEnter={() => setTrendingIsPaused(true)}
-          onMouseLeave={() => setTrendingIsPaused(false)}
-        >
-          <div
-            ref={trendingCarouselRef}
-            onScroll={checkTrendingScrollButtons}
-            className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
-            {trendingProducts.map((product) => {
-              const productImage =
-                product.gallery?.[0] ||
-                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-
-              return (
-                <button
-                  key={product.id}
-                  onClick={() => navigate(`/buyer/products/${product.id}`)}
-                  className="group relative flex-shrink-0 w-[280px] aspect-square overflow-hidden rounded-4xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-[1.02] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                >
-                  <div className="relative h-full w-full overflow-hidden">
-                    <img
-                      src={productImage}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        e.target.src =
-                          'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
-
-                    <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-                      <span className="inline-flex items-center rounded-full bg-emerald-500/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-                        Trending
-                      </span>
-                      <h3 className="mt-2 text-sm font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] line-clamp-2">
-                        {product.name}
-                      </h3>
-                      <p className="mt-1 text-[11px] font-medium text-emerald-100">
-                        ₹{product.priceMin.toLocaleString()} – ₹{product.priceMax.toLocaleString()} · MOQ{' '}
-                        {product.moq.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          {trendingCanScrollLeft && (
-            <button
-              onClick={() => scrollTrendingCarousel('left')}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white border-2 border-neutral-300 shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_8px_rgba(0,0,0,0.1)] hover:bg-neutral-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.15)] hover:border-neutral-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              aria-label="Scroll trending products left"
-            >
-              <ChevronLeft className="h-5 w-5 text-neutral-800" />
-            </button>
-          )}
-          {trendingCanScrollRight && (
-            <button
-              onClick={() => scrollTrendingCarousel('right')}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white border-2 border-neutral-300 shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_8px_rgba(0,0,0,0.1)] hover:bg-neutral-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.2),0_4px_12px_rgba(0,0,0,0.15)] hover:border-neutral-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              aria-label="Scroll trending products right"
-            >
-              <ChevronRight className="h-5 w-5 text-neutral-800" />
-            </button>
-          )}
-        </div>
-      </Card>
     </div>
   )
 }

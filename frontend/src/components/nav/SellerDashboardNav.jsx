@@ -9,10 +9,12 @@ const sellerLinks = [
   { label: 'My Products', href: '/seller/products' },
   { label: 'Add Product', href: '/seller/products/new' },
   { label: 'RFQs Received', href: '/seller/rfqs' },
+  { label: 'Messages', href: '/seller/messages' },
+  { label: 'KYC Verification', href: '/seller/kyc' },
 ]
 
-const linkClasses =
-  'rounded-full px-4 py-2 text-sm font-semibold transition hover:bg-white/80 hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40'
+const linkBaseClasses =
+  'relative inline-flex items-center justify-center px-2 py-1.5 text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-primary'
 
 const SellerDashboardNav = () => {
   const { user, setUser } = useAuth()
@@ -47,29 +49,46 @@ const SellerDashboardNav = () => {
   }
 
   return (
-    <header className="rounded-[32px] border border-surface-border bg-white/90 px-4 py-3 shadow-[0_12px_35px_rgba(15,98,254,0.08)] sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-4">
+    <header className="w-full rounded-3xl border border-surface-border bg-white/95 px-4 py-2 shadow-[0_10px_30px_rgba(15,23,42,0.08)] sm:px-6 lg:px-10">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-6 lg:h-16">
+        {/* Left: Logo + title */}
+        <div className="flex min-w-0 items-center gap-3">
           <Logo compact />
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-brand-secondary">Seller workspace</p>
-            <p className="text-sm text-neutral-500">Maintain catalogues and reply to RFQs.</p>
+          <div className="min-w-0">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-brand-secondary">
+              Seller workspace
+            </p>
+            <p className="truncate text-xs text-neutral-600 sm:text-sm">
+              Maintain catalogues and reply to RFQs.
+            </p>
           </div>
         </div>
-        <div className="flex flex-1 flex-wrap items-center justify-end gap-3">
-          <nav className="flex flex-wrap items-center gap-2" aria-label="Seller dashboard">
+
+        {/* Center: nav tabs with underline active state */}
+        <nav
+          className="hidden flex-1 items-center justify-start lg:flex"
+          aria-label="Seller dashboard"
+        >
+          <div className="flex flex-nowrap items-center gap-6">
             {sellerLinks.map((link) => (
               <NavLink
                 key={link.href}
                 to={link.href}
-                className={({ isActive }) =>
-                  `${linkClasses} ${isActive ? 'bg-brand-primary/10 text-brand-primary' : 'text-neutral-600'}`
-                }
+                className={({ isActive }) => {
+                  const activeClasses =
+                    'text-brand-primary border-b-2 border-brand-primary pb-1'
+                  const inactiveClasses = 'text-neutral-700 hover:text-brand-primary'
+                  return `${linkBaseClasses} ${isActive ? activeClasses : inactiveClasses}`
+                }}
               >
-                {link.label}
+                <span className="px-0.5">{link.label}</span>
               </NavLink>
             ))}
-          </nav>
+          </div>
+        </nav>
+
+        {/* Right: profile button */}
+        <div className="flex shrink-0 items-center gap-2">
           <div className="relative" ref={profileRef}>
             <Button
               type="button"

@@ -19,16 +19,29 @@ import ProductDetails from './pages/buyer/ProductDetails.jsx'
 import RFQSubmission from './pages/buyer/RFQSubmission.jsx'
 import RFQCenter from './pages/buyer/RFQCenter.jsx'
 import BuyerProfile from './pages/buyer/Profile.jsx'
+import BuyerKYCSubmission from './pages/buyer/BuyerKYCSubmission.jsx'
+import ContactSeller from './pages/buyer/ContactSeller.jsx'
+import Messages from './pages/buyer/Messages.jsx'
 import SellerProfile from './pages/seller/Profile.jsx'
 import ProductCatalog from './pages/seller/ProductCatalog.jsx'
 import ProductEditor from './pages/seller/ProductEditor.jsx'
 import RFQInbox from './pages/seller/RFQInbox.jsx'
 import RFQResponse from './pages/seller/RFQResponse.jsx'
 import SellerProductView from './pages/seller/ProductView.jsx'
+import SellerKYCSubmission from './pages/seller/SellerKYCSubmission.jsx'
+import SellerMessages from './pages/seller/Messages.jsx'
 import UserManagement from './pages/admin/UserManagement.jsx'
 import ProductModeration from './pages/admin/ProductModeration.jsx'
+import SellerKYCManagement from './pages/admin/SellerKYCManagement.jsx'
+import BuyerKYCManagement from './pages/admin/BuyerKYCManagement.jsx'
 import RFQMonitoring from './pages/admin/RFQMonitoring.jsx'
 import AdminProductView from './pages/admin/ProductView.jsx'
+import SubscriptionManagement from './pages/admin/SubscriptionManagement.jsx'
+import SubscriptionSellers from './pages/admin/SubscriptionSellers.jsx'
+import PrivacyPolicy from './pages/legal/PrivacyPolicy.jsx'
+import DataKYCStorage from './pages/legal/DataKYCStorage.jsx'
+import TermsOfUse from './pages/legal/TermsOfUse.jsx'
+import MessageOversight from './pages/admin/MessageOversight.jsx'
 import ProtectedRoute from './components/common/ProtectedRoute.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { RFQProvider } from './context/RFQContext.jsx'
@@ -41,6 +54,9 @@ const App = () => (
           <Routes>
           {/* Public */}
           <Route path="/" element={<PublicLayout />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/data-kyc" element={<DataKYCStorage />} />
+          <Route path="/terms" element={<TermsOfUse />} />
           <Route path="/auth/buyer/signup" element={<BuyerSignup />} />
           <Route path="/auth/buyer/login" element={<BuyerLogin />} />
           <Route path="/auth/seller/signup" element={<SellerSignup />} />
@@ -119,6 +135,36 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/buyer/kyc"
+            element={
+              <ProtectedRoute allowed={['buyer']}>
+                <BuyerLayout>
+                  <BuyerKYCSubmission />
+                </BuyerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/buyer/messages/contact"
+            element={
+              <ProtectedRoute allowed={['buyer']}>
+                <BuyerLayout>
+                  <ContactSeller />
+                </BuyerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/buyer/messages"
+            element={
+              <ProtectedRoute allowed={['buyer']}>
+                <BuyerLayout>
+                  <Messages />
+                </BuyerLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* Seller */}
           <Route
@@ -192,6 +238,26 @@ const App = () => (
             }
           />
           <Route
+            path="/seller/kyc"
+            element={
+              <ProtectedRoute allowed={['seller']}>
+                <SellerLayout>
+                  <SellerKYCSubmission />
+                </SellerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/seller/messages"
+            element={
+              <ProtectedRoute allowed={['seller']}>
+                <SellerLayout>
+                  <SellerMessages />
+                </SellerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/seller/rfqs/:rfqId/respond"
             element={
               <ProtectedRoute allowed={['seller']}>
@@ -244,6 +310,46 @@ const App = () => (
             }
           />
           <Route
+            path="/admin/subscriptions"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <SubscriptionManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/subscriptions/sellers"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <SubscriptionSellers />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/kyc/sellers"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <SellerKYCManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/kyc/buyers"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <BuyerKYCManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/products/:productId/view"
             element={
               <ProtectedRoute allowed={['admin']}>
@@ -269,6 +375,16 @@ const App = () => (
               <ProtectedRoute allowed={['admin']}>
                 <AdminLayout>
                   <AdminProfile />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/messages"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <MessageOversight />
                 </AdminLayout>
               </ProtectedRoute>
             }

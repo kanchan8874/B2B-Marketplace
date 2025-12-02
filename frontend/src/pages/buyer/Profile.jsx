@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Building2, MapPin, Phone } from 'lucide-react'
+import { User, Building2, MapPin, Phone, Bell } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
@@ -18,6 +18,12 @@ const BuyerProfile = () => {
     note: '',
   })
 
+  const [notifications, setNotifications] = useState({
+    emailOnNewMessage: true,
+    emailOnKycStatus: true,
+    emailOnProductModeration: true,
+  })
+
   const handleChange = (field) => (event) => {
     const { value } = event.target
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -26,7 +32,12 @@ const BuyerProfile = () => {
   const handleSubmit = (event) => {
     event.preventDefault()
     // TODO: wire up to backend profile API
-    setUser?.({ ...(user || {}), name: form.name, email: form.email })
+    setUser?.({
+      ...(user || {}),
+      name: form.name,
+      email: form.email,
+      notificationPreferences: notifications,
+    })
   }
 
   const handleLogout = () => {
@@ -117,6 +128,54 @@ const BuyerProfile = () => {
               inputClassName="text-sm"
               icon={MapPin}
             />
+          </div>
+
+          {/* Notification preferences */}
+          <div className="mt-2 rounded-2xl border border-blue-100 bg-white/80 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-blue-600" aria-hidden="true" />
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-600">
+                Email notifications
+              </p>
+            </div>
+            <fieldset className="space-y-2" aria-label="Buyer email notification preferences">
+              <label className="flex items-center justify-between gap-3 text-xs text-neutral-700">
+                <span>New messages from sellers</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-7 cursor-pointer rounded-full border-neutral-300 text-brand-primary focus:ring-2 focus:ring-brand-primary/30"
+                  checked={notifications.emailOnNewMessage}
+                  onChange={(e) =>
+                    setNotifications((prev) => ({ ...prev, emailOnNewMessage: e.target.checked }))
+                  }
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-xs text-neutral-700">
+                <span>KYC status updates</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-7 cursor-pointer rounded-full border-neutral-300 text-brand-primary focus:ring-2 focus:ring-brand-primary/30"
+                  checked={notifications.emailOnKycStatus}
+                  onChange={(e) =>
+                    setNotifications((prev) => ({ ...prev, emailOnKycStatus: e.target.checked }))
+                  }
+                />
+              </label>
+              <label className="flex items-center justify-between gap-3 text-xs text-neutral-700">
+                <span>Product approval & moderation</span>
+                <input
+                  type="checkbox"
+                  className="h-4 w-7 cursor-pointer rounded-full border-neutral-300 text-brand-primary focus:ring-2 focus:ring-brand-primary/30"
+                  checked={notifications.emailOnProductModeration}
+                  onChange={(e) =>
+                    setNotifications((prev) => ({
+                      ...prev,
+                      emailOnProductModeration: e.target.checked,
+                    }))
+                  }
+                />
+              </label>
+            </fieldset>
           </div>
 
           <div className="grid gap-2 sm:grid-cols-2">

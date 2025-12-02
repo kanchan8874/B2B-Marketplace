@@ -4,11 +4,16 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import swaggerUi from 'swagger-ui-express'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { env } from './config/env.js'
 import router from './routes/index.js'
 import { notFoundHandler } from './middlewares/notFound.js'
 import { errorHandler } from './middlewares/errorHandler.js'
 import { swaggerSpec } from './docs/swagger.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const app = express()
 
@@ -39,6 +44,9 @@ app.use('/api', apiLimiter)
 // Body parsing
 app.use(express.json({ limit: '1mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+// Static file serving for uploads
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 // API routes
 app.use('/api', router)

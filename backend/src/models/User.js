@@ -21,6 +21,17 @@ const userSchema = new mongoose.Schema(
       country: String,
     },
     isActive: { type: Boolean, default: true },
+    isVerified: { type: Boolean, default: false, index: true }, // For verified badge
+    subscriptionTier: {
+      type: String,
+      enum: ['Silver', 'Gold', 'Platinum'],
+      default: 'Silver',
+    },
+    notificationPreferences: {
+      emailOnNewMessage: { type: Boolean, default: true },
+      emailOnKycStatus: { type: Boolean, default: true },
+      emailOnProductModeration: { type: Boolean, default: true },
+    },
   },
   { timestamps: true },
 )
