@@ -4,16 +4,73 @@ import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
-import { products } from '../../mocks/products.js'
-import { categories } from '../../mocks/categories.js'
+import { getCategories } from '../../services/categoryService.js'
+import { listProducts } from '../../services/productService.js'
 
 const ProductListing = () => {
   const [searchParams] = useSearchParams()
   const [searchQuery, setSearchQuery] = useState('')
+  const [categories, setCategories] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const categoryId = searchParams.get('category')
   const navigate = useNavigate()
   const scrollRefs = useRef({})
   const [scrollStates, setScrollStates] = useState({})
+
+  // Load categories + products from API
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const [categoryData, productData] = await Promise.all([
+          getCategories(),
+          listProducts({ category: categoryId, search: searchQuery, status: 'Live' }),
+        ])
+        if (!isMounted) return
+
+        // Normalise categories to always have an `id` field
+        const categoriesNormalised = (categoryData || []).map((cat) => ({
+          ...cat,
+          id: cat.id || cat._id,
+        }))
+        setCategories(categoriesNormalised)
+
+        const productsRaw = productData || []
+        const normalised = productsRaw.map((p) => ({
+          id: p._id,
+          name: p.name,
+          priceMin: p.priceMin ?? 0,
+          priceMax: p.priceMax ?? 0,
+          moq: p.moq ?? 0,
+          seller: p.seller?.name || 'Seller',
+          city: p.city || '',
+          state: p.state || '',
+          categoryId: p.category?._id,
+          gallery: Array.isArray(p.images) ? p.images : [],
+          shortDescription: p.shortDescription || p.description || '',
+        }))
+        setProducts(normalised)
+      } catch (err) {
+        console.error('Failed to load products:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load products.')
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [categoryId, searchQuery])
 
   // Group products by category
   const productsByCategory = useMemo(() => {
@@ -54,7 +111,7 @@ const ProductListing = () => {
         products: grouped[cat.name] || [],
       }))
       .filter((group) => group.products.length > 0)
-  }, [categoryId, searchQuery])
+  }, [categoryId, searchQuery, products, categories])
 
   const resolveImage = (product) => {
     const candidate = product.gallery?.[0]
@@ -119,6 +176,11 @@ const ProductListing = () => {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
       {/* Search Section */}
       <Card
         title="Product catalogue"

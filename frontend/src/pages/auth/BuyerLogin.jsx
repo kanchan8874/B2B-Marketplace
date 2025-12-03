@@ -4,6 +4,7 @@ import { Mail, Phone, Eye, EyeOff, Lock } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
+import { login, sendOtp, verifyOtp } from '../../services/authService.js'
 import {
   email as emailRule,
   mobile,
@@ -36,11 +37,15 @@ const buyerIllustration =
 
 const BuyerLogin = () => {
   const [mode, setMode] = useState('password')
-  const [otpDeliveryMethod, setOtpDeliveryMethod] = useState('phone')
+  const [otpDeliveryMethod, setOtpDeliveryMethod] = useState('email')
   const [showPassword, setShowPassword] = useState(false)
   const [emailForm, setEmailForm] = useState({ ...emailInitial })
   const [mobileForm, setMobileForm] = useState({ ...otpInitial })
   const [errors, setErrors] = useState({ ...emptyErrors })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
+  const [sendingOtp, setSendingOtp] = useState(false)
   const { setUser } = useAuth()
   const navigate = useNavigate()
 
@@ -84,6 +89,8 @@ const BuyerLogin = () => {
     setOtpDeliveryMethod(method)
     setMobileForm({ ...otpInitial })
     setErrors({ ...emptyErrors })
+    setOtpSent(false) // Reset OTP sent status when method changes
+    setSubmitError('')
   }
 
   const handleEmailChange = (event) => {
@@ -125,31 +132,93 @@ const BuyerLogin = () => {
     applyErrors([name], result.errors)
   }
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
+    setSubmitError('')
     const schema = otpDeliveryMethod === 'phone' ? { phone: phoneOtpSchema.phone } : { otpEmail: emailOtpSchema.otpEmail }
     const result = runValidationSchema(mobileForm, schema)
     applyErrors(Object.keys(schema), result.errors)
     if (!result.isValid) return
+
+    setSendingOtp(true)
+    try {
+      const email = otpDeliveryMethod === 'email' ? mobileForm.otpEmail : undefined
+      const phone = otpDeliveryMethod === 'phone' ? mobileForm.phone : undefined
+
+      await sendOtp(email, phone)
+      setOtpSent(true)
+      // Clear OTP field for new entry
+      setMobileForm((prev) => ({ ...prev, otp: '' }))
+    } catch (error) {
+      console.error('Send OTP error:', error)
+      setSubmitError(error.message || 'Failed to send OTP. Please try again.')
+    } finally {
+      setSendingOtp(false)
+    }
   }
 
-  const handleOtpSubmit = (event) => {
+  const handleOtpSubmit = async (event) => {
     event.preventDefault()
+    setSubmitError('')
+    
     if (!validateOtpForm()) return
-    const identifier = otpDeliveryMethod === 'phone' ? mobileForm.phone : mobileForm.otpEmail
-    handleSuccess(identifier)
-    resetForms()
+
+    if (!otpSent) {
+      setSubmitError('Please send OTP first')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const email = otpDeliveryMethod === 'email' ? mobileForm.otpEmail : undefined
+      const phone = otpDeliveryMethod === 'phone' ? mobileForm.phone : undefined
+
+      const response = await verifyOtp(mobileForm.otp, email, phone)
+
+      // Update user context immediately
+      if (response.data?.user) {
+        setUser(response.data.user)
+        // Small delay to ensure state is updated before navigation
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+
+      // Redirect to buyer dashboard
+      navigate('/buyer/dashboard', { replace: true })
+      resetForms()
+      setOtpSent(false)
+    } catch (error) {
+      console.error('Verify OTP error:', error)
+      setSubmitError(error.message || 'Invalid OTP. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleEmailSubmit = (event) => {
+  const handleEmailSubmit = async (event) => {
     event.preventDefault()
+    setSubmitError('')
+    
     if (!validateEmailForm()) return
-    handleSuccess(emailForm.email)
-    resetForms()
-  }
 
-  const handleSuccess = (name = 'Procurement Lead') => {
-    setUser?.({ name, role: 'buyer' })
-    navigate('/buyer/dashboard')
+    setSubmitting(true)
+    try {
+      const response = await login(emailForm.email, emailForm.password)
+      
+      // Update user context immediately
+      if (response.data?.user) {
+        setUser(response.data.user)
+        // Small delay to ensure state is updated before navigation
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+
+      // Redirect to buyer dashboard
+      navigate('/buyer/dashboard', { replace: true })
+      resetForms()
+    } catch (error) {
+      console.error('Login error:', error)
+      setSubmitError(error.message || 'Login failed. Please check your credentials.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -188,80 +257,58 @@ const BuyerLogin = () => {
                 ))}
               </div>
 
-              {/* OTP Delivery Method Selector */}
-              {mode === 'otp' && (
-                <div className="mb-5 transition-all duration-200 ease-out">
-                  <p className="mb-2.5 text-xs font-semibold text-neutral-800 tracking-tight">Choose OTP Delivery Method</p>
-                  <div className="flex rounded-xl bg-neutral-100/60 p-1.5">
-                    {[
-                      { id: 'phone', label: 'Phone', icon: Phone },
-                      { id: 'email', label: 'Email', icon: Mail },
-                    ].map((option) => {
-                      const Icon = option.icon
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => handleOtpMethodChange(option.id)}
-                          className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ease-out ${
-                            otpDeliveryMethod === option.id
-                              ? 'bg-white text-brand-primary shadow-sm'
-                              : 'text-neutral-600 hover:text-neutral-900 hover:bg-white/50'
-                          }`}
-                          aria-pressed={otpDeliveryMethod === option.id}
-                        >
-                          <Icon className="h-4 w-4" aria-hidden="true" />
-                          {option.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* OTP Delivery Method Selector - Removed phone option, only email */}
 
               {/* Forms */}
               {mode === 'otp' ? (
                 <form className="space-y-4 transition-all duration-200 ease-out" onSubmit={handleOtpSubmit} noValidate>
-                  {otpDeliveryMethod === 'phone' ? (
-                    <FormField
-                      id="buyerPhone"
-                      name="phone"
-                      label="Mobile number"
-                      type="tel"
-                      required
-                      icon={Phone}
-                      value={mobileForm.phone}
-                      onChange={handleOtpChange}
-                      onBlur={handleFieldBlur}
-                      placeholder="+91 9876543210"
-                      helper="We will send a one-time code."
-                      error={errors.phone}
-                      wrapperClassName="space-y-2"
-                    />
-                  ) : (
-                    <FormField
-                      id="buyerOtpEmail"
-                      name="otpEmail"
-                      label="Email Address"
-                      type="email"
-                      required
-                      icon={Mail}
-                      value={mobileForm.otpEmail}
-                      onChange={handleOtpChange}
-                      onBlur={handleFieldBlur}
-                      placeholder="riya@acme.com"
-                      helper="We will send a one-time code."
-                      error={errors.otpEmail}
-                      wrapperClassName="space-y-2"
-                    />
+                  <FormField
+                    id="buyerOtpEmail"
+                    name="otpEmail"
+                    label="Email Address"
+                    type="email"
+                    required
+                    icon={Mail}
+                    value={mobileForm.otpEmail}
+                    onChange={handleOtpChange}
+                    onBlur={handleFieldBlur}
+                    placeholder="b2b@example.com"
+                    helper={otpSent ? "OTP sent! Check your email." : ""}
+                    error={errors.otpEmail}
+                    disabled={otpSent}
+                    wrapperClassName="space-y-2"
+                  />
+
+                  {otpSent && (
+                    <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+                      ✓ OTP sent to {mobileForm.otpEmail}. Please check your email.
+                    </div>
+                  )}
+
+                  {submitError && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                      {submitError}
+                    </div>
                   )}
 
                   <div className="flex gap-3">
-                    <Button type="button" variant="secondary" className="flex-1" size="md" onClick={handleSendOtp}>
-                      Send OTP
+                    <Button 
+                      type="button" 
+                      variant="secondary" 
+                      className="flex-1" 
+                      size="md" 
+                      onClick={handleSendOtp}
+                      disabled={sendingOtp || otpSent}
+                    >
+                      {sendingOtp ? 'Sending...' : otpSent ? 'OTP Sent' : 'Send OTP'}
                     </Button>
-                    <Button type="submit" className="flex-1" size="md">
-                      Verify & sign in
+                    <Button 
+                      type="submit" 
+                      className="flex-1" 
+                      size="md"
+                      disabled={submitting || !otpSent}
+                    >
+                      {submitting ? 'Verifying...' : 'Verify & sign in'}
                     </Button>
                   </div>
 
@@ -336,8 +383,13 @@ const BuyerLogin = () => {
                     </a>
                   </div>
 
-                  <Button type="submit" size="md" className="w-full mt-2">
-                    Sign in
+                  {submitError && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                      {submitError}
+                    </div>
+                  )}
+                  <Button type="submit" size="md" className="w-full mt-2" disabled={submitting}>
+                    {submitting ? 'Signing in...' : 'Sign in'}
                   </Button>
                 </form>
               )}

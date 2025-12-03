@@ -9,6 +9,7 @@ const adminLinks = [
   { label: 'Dashboard', href: '/admin/dashboard' },
   { label: 'Users Management', href: '/admin/users' },
   { label: 'Products Management', href: '/admin/products' },
+  { label: 'Category Management', href: '/admin/categories' },
   { label: 'Subscription Management', href: '/admin/subscriptions' },
   { label: 'RFQ Monitor', href: '/admin/rfqs' },
   { label: 'Message Oversight', href: '/admin/messages' },

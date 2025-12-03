@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { User, Building2, MapPin, Phone, Bell } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
+import { getProfile, updateProfile } from '../../services/profileService.js'
 
 const BuyerProfile = () => {
   const { user, setUser } = useAuth()
@@ -14,6 +14,7 @@ const BuyerProfile = () => {
     phone: '',
     company: '',
     city: '',
+    state: '',
     country: 'India',
     note: '',
   })
@@ -23,21 +24,79 @@ const BuyerProfile = () => {
     emailOnKycStatus: true,
     emailOnProductModeration: true,
   })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      try {
+        setLoading(true)
+        const profile = await getProfile()
+        if (!isMounted || !profile) return
+
+        setForm((prev) => ({
+          ...prev,
+          name: profile.name || prev.name,
+          email: profile.email || prev.email,
+          phone: profile.phone || '',
+          company: profile.companyName || '',
+          city: profile.location?.city || '',
+          state: profile.location?.state || '',
+          country: profile.location?.country || prev.country,
+        }))
+        setNotifications((prev) => ({
+          ...prev,
+          ...(profile.notificationPreferences || {}),
+        }))
+      } catch (err) {
+        console.error('Failed to load profile:', err)
+        setError(err.message || 'Failed to load profile.')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const handleChange = (field) => (event) => {
     const { value } = event.target
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    // TODO: wire up to backend profile API
-    setUser?.({
-      ...(user || {}),
-      name: form.name,
-      email: form.email,
-      notificationPreferences: notifications,
-    })
+    setError('')
+    setSuccess('')
+
+    try {
+      setSaving(true)
+      const payload = {
+        name: form.name,
+        phone: form.phone || undefined,
+        companyName: form.company || undefined,
+        location: {
+          city: form.city || undefined,
+          state: form.state || undefined,
+          country: form.country || undefined,
+        },
+        notificationPreferences: notifications,
+      }
+
+      const updated = await updateProfile(payload)
+      setUser?.(updated)
+      setSuccess('Profile saved successfully.')
+    } catch (err) {
+      console.error('Failed to save profile:', err)
+      setError(err.message || 'Failed to save profile.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleLogout = () => {
@@ -77,6 +136,19 @@ const BuyerProfile = () => {
           className="grid gap-3 px-6 py-4 bg-gradient-to-b from-blue-50/40 via-white to-blue-50/30"
           noValidate
         >
+          {loading && (
+            <p className="mb-1 text-xs text-neutral-500">Loading your profile...</p>
+          )}
+          {error && (
+            <div className="mb-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+              {error}
+            </div>
+          )}
+          {success && !loading && (
+            <div className="mb-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+              {success}
+            </div>
+          )}
           <FormField
             id="buyerProfileName"
             label="Full name"
@@ -127,6 +199,14 @@ const BuyerProfile = () => {
               wrapperClassName="!space-y-1 text-xs"
               inputClassName="text-sm"
               icon={MapPin}
+            />
+            <FormField
+              id="buyerProfileState"
+              label="State"
+              value={form.state}
+              onChange={handleChange('state')}
+              wrapperClassName="!space-y-1 text-xs"
+              inputClassName="text-sm"
             />
           </div>
 
@@ -214,8 +294,8 @@ const BuyerProfile = () => {
               >
                 Logout
               </Button>
-              <Button type="submit" size="sm" className="rounded-full px-5 text-xs">
-                Save profile
+              <Button type="submit" size="sm" className="rounded-full px-5 text-xs" disabled={saving}>
+                {saving ? 'Saving...' : 'Save profile'}
               </Button>
             </div>
           </div>

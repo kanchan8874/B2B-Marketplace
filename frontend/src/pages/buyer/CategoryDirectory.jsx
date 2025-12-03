@@ -1,19 +1,47 @@
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import CategoryGrid from '../../components/buyer/CategoryGrid.jsx'
 import Button from '../../components/common/Button.jsx'
-import { categories } from '../../mocks/categories.js'
+import { getCategories } from '../../services/categoryService.js'
 
-const stats = [
-  { label: 'Curated categories', value: categories.length, tone: 'blue' },
+const statsFromApi = (count) => [
+  { label: 'Curated categories', value: count ?? 0, tone: 'blue' },
   { label: 'Vetted suppliers', value: '380+', tone: 'teal' },
   { label: 'Ready RFQs', value: '140+', tone: 'gold' },
 ]
 
 const CategoryDirectory = () => {
   const navigate = useNavigate()
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await getCategories()
+        if (!isMounted) return
+        setCategories(data)
+      } catch (err) {
+        console.error('Failed to load categories:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load categories.')
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const handleSelect = (category) => {
-    navigate(`/buyer/products?category=${category.id}`)
+    navigate(`/buyer/products?category=${category.id || category._id}`)
   }
 
   return (
@@ -37,7 +65,7 @@ const CategoryDirectory = () => {
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
-            {stats.map((stat) => {
+            {statsFromApi(categories.length).map((stat) => {
               const toneClasses =
                 stat.tone === 'blue'
                   ? {
@@ -74,6 +102,11 @@ const CategoryDirectory = () => {
       </section>
 
       <section className="rounded-4xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white/95 to-emerald-50/70 p-8 shadow-[0_25px_70px_rgba(16,185,129,0.18)]">
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-3xl font-bold text-neutral-900 mb-2">Categories</h2>
@@ -83,7 +116,7 @@ const CategoryDirectory = () => {
             View all products
           </Button>
         </div>
-        <CategoryGrid items={categories} onSelect={handleSelect} />
+        <CategoryGrid items={categories} loading={loading} onSelect={handleSelect} />
       </section>
     </div>
   )

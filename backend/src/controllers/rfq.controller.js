@@ -37,7 +37,12 @@ export const listRFQs = catchAsync(async (req, res) => {
     filter.seller = id
   }
 
-  const rfqs = await RFQ.find(filter).sort('-createdAt')
+  const rfqs = await RFQ.find(filter)
+    .populate('product', 'name images priceMin priceMax moq')
+    .populate('seller', 'name companyName')
+    .populate('buyer', 'name companyName')
+    .sort('-createdAt')
+
   return res.status(StatusCodes.OK).json(success(rfqs))
 })
 
@@ -52,7 +57,17 @@ export const createRFQ = catchAsync(async (req, res) => {
 
 export const getRFQ = catchAsync(async (req, res) => {
   const rfq = await RFQ.findById(req.params.id)
-  const responses = await RFQResponse.find({ rfq: rfq.id }).sort('-createdAt')
+    .populate('product', 'name images priceMin priceMax moq')
+    .populate('seller', 'name companyName')
+
+  if (!rfq) {
+    return res.status(StatusCodes.NOT_FOUND).json(success(null, 'RFQ not found'))
+  }
+
+  const responses = await RFQResponse.find({ rfq: rfq.id })
+    .populate('seller', 'name companyName')
+    .sort('-createdAt')
+
   return res.status(StatusCodes.OK).json(success({ rfq, responses }))
 })
 

@@ -1,22 +1,38 @@
 import PropTypes from 'prop-types'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { AlertCircle, Crown } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import ProductForm from '../../components/seller/ProductForm.jsx'
 import Button from '../../components/common/Button.jsx'
 import { getSellerSubscription } from '../../services/subscriptionService.js'
+import { createProduct, getProductById, updateProduct } from '../../services/productService.js'
+import { getCategories } from '../../services/categoryService.js'
+import { getSellerKYC } from '../../services/kycService.js'
 
 const ProductEditor = ({ mode = 'create' }) => {
   const navigate = useNavigate()
+  const { productId } = useParams()
   const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(mode === 'create')
+  const [saving, setSaving] = useState(false)
+  const [initialValues, setInitialValues] = useState(null)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [kycStatus, setKycStatus] = useState(null)
+  const [kycLoading, setKycLoading] = useState(true)
+  const [categories, setCategories] = useState([])
 
   useEffect(() => {
+    loadCategories()
     if (mode === 'create') {
       loadSubscription()
     }
-  }, [mode])
+    loadSellerKYC()
+    if (mode === 'edit' && productId) {
+      loadProduct()
+    }
+  }, [mode, productId])
 
   const loadSubscription = async () => {
     try {
@@ -32,7 +48,118 @@ const ProductEditor = ({ mode = 'create' }) => {
     }
   }
 
-  if (mode === 'create' && loading) {
+  const loadSellerKYC = async () => {
+    try {
+      setKycLoading(true)
+      const response = await getSellerKYC()
+      if (response.data) {
+        setKycStatus(response.data.status)
+      } else {
+        setKycStatus(null)
+      }
+    } catch (error) {
+      console.error('Failed to load seller KYC status:', error)
+    } finally {
+      setKycLoading(false)
+    }
+  }
+
+  const loadCategories = async () => {
+    try {
+      const data = await getCategories()
+      setCategories(data || [])
+    } catch (error) {
+      console.error('Failed to load categories:', error)
+    }
+  }
+
+  const loadProduct = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const data = await getProductById(productId)
+      if (!data) {
+        setError('Product not found.')
+      } else {
+        setInitialValues({
+          name: data.name || '',
+          description: data.description || '',
+          priceMin: data.priceMin || '',
+          priceMax: data.priceMax || '',
+          moq: data.moq || '',
+          category: data.category?._id || data.category || '',
+          location: [data.city, data.state].filter(Boolean).join(', '),
+          sku: data.sku || '',
+          stock: data.stock || '',
+          subcategory: data.subcategory || '',
+          priceValidityDate: data.priceValidityDate ? data.priceValidityDate.slice(0, 10) : '',
+          paymentTerms: data.paymentTerms || '',
+          shipmentMode: data.shipmentMode || '',
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load product:', error)
+      setError(error.message || 'Failed to load product.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (values) => {
+    try {
+      setSaving(true)
+      setError('')
+      setSuccess('')
+
+      // Parse location into city/state
+      const parts = (values.location || '').split(',').map((p) => p.trim())
+      const city = parts[0] || ''
+      const state = parts[1] || ''
+
+      const formData = new FormData()
+      formData.append('name', values.name)
+      formData.append('shortDescription', values.description || '')
+      formData.append('description', values.description || '')
+      formData.append('category', values.category)
+      formData.append('priceMin', Number(values.priceMin))
+      formData.append('priceMax', Number(values.priceMax))
+      formData.append('moq', Number(values.moq))
+      if (city) formData.append('city', city)
+      if (state) formData.append('state', state)
+      if (values.priceValidityDate) formData.append('priceValidityDate', values.priceValidityDate)
+      if (values.paymentTerms) formData.append('paymentTerms', values.paymentTerms)
+      if (values.shipmentMode) formData.append('shipmentMode', values.shipmentMode)
+
+      // Attach up to 4 media files as 'images'
+      if (Array.isArray(values.mediaFiles)) {
+        values.mediaFiles.slice(0, 4).forEach((file) => {
+          if (file) {
+            formData.append('images', file)
+          }
+        })
+      }
+
+      if (mode === 'create') {
+        await createProduct(formData)
+        setSuccess('Product created successfully.')
+      } else {
+        await updateProduct(productId, formData)
+        setSuccess('Product updated successfully.')
+      }
+
+      // Redirect back to seller products after short delay
+      setTimeout(() => {
+        navigate('/seller/products', { replace: true })
+      }, 600)
+    } catch (error) {
+      console.error('Failed to save product:', error)
+      setError(error.message || 'Failed to save product.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading && (mode === 'create' || (mode === 'edit' && !initialValues))) {
     return (
       <section className="mx-auto max-w-4xl">
         <div className="flex items-center justify-center py-12">
@@ -96,6 +223,61 @@ const ProductEditor = ({ mode = 'create' }) => {
     )
   }
 
+  // While checking KYC status for create mode, show lightweight loader
+  if (mode === 'create' && kycLoading) {
+    return (
+      <section className="mx-auto max-w-3xl">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4"></div>
+            <p className="text-sm text-neutral-600">Checking your verification status...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // Require KYC approval before allowing product creation
+  if (mode === 'create' && !kycLoading && kycStatus !== 'Approved') {
+    return (
+      <section className="mx-auto max-w-3xl">
+        <Card className="border-amber-200 bg-gradient-to-br from-amber-50/80 via-white to-yellow-50/80">
+          <div className="space-y-4 text-center">
+            <h2 className="text-2xl font-bold text-neutral-900">Complete seller verification</h2>
+            <p className="text-sm text-neutral-700 max-w-xl mx-auto">
+              You need an approved KYC profile before you can list products. This helps buyers trust
+              your catalogue and keeps the marketplace compliant.
+            </p>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button
+                type="button"
+                size="lg"
+                className="rounded-full px-6"
+                onClick={() => navigate('/seller/kyc')}
+              >
+                Go to KYC verification
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                className="rounded-full px-6"
+                onClick={() => navigate('/seller/dashboard')}
+              >
+                Back to dashboard
+              </Button>
+            </div>
+            {kycStatus && (
+              <p className="text-xs text-neutral-500">
+                Current KYC status: <span className="font-semibold">{kycStatus}</span>
+              </p>
+            )}
+          </div>
+        </Card>
+      </section>
+    )
+  }
+
   return (
     <section className="mx-auto max-w-4xl">
       {mode === 'create' && subscription && subscription.remainingSlots <= 3 && (
@@ -117,7 +299,22 @@ const ProductEditor = ({ mode = 'create' }) => {
         subtitle="Minimal, structured fields to keep your catalogue clean and approvals fast."
         className="border-blue-100 bg-gradient-to-br from-white via-blue-50/40 to-emerald-50/60 shadow-[0_18px_50px_rgba(15,23,42,0.12)]"
       >
-        <ProductForm submitLabel={mode === 'create' ? 'Publish product' : 'Save changes'} />
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            {success}
+          </div>
+        )}
+        <ProductForm
+          submitLabel={saving ? 'Saving...' : mode === 'create' ? 'Publish product' : 'Save changes'}
+          onSubmit={handleSubmit}
+          categories={categories}
+          initialValues={mode === 'edit' ? initialValues : undefined}
+        />
       </Card>
     </section>
   )

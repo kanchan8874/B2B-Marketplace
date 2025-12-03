@@ -1,20 +1,74 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Package, Store, FileText, Inbox as InboxIcon } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
-import RFQList from '../../components/seller/RFQList.jsx'
 import ProductStatusBadge from '../../components/seller/ProductStatusBadge.jsx'
 import SubscriptionTierCard from '../../components/seller/SubscriptionTierCard.jsx'
-import { products } from '../../mocks/products.js'
-import { rfqs } from '../../mocks/rfqs.js'
+import { listRFQs } from '../../services/rfqService.js'
+import { listProducts } from '../../services/productService.js'
+import { useAuth } from '../../hooks/useAuth.js'
 
 const SellerDashboard = () => {
-  const kpis = useMemo(
-    () => [
+  const { user } = useAuth()
+  const [rfqs, setRfqs] = useState([])
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const [rfqData, productData] = await Promise.all([
+          listRFQs(),
+          listProducts({ seller: user?.id, includeAuth: true }),
+        ])
+        if (!isMounted) return
+        setRfqs(rfqData || [])
+        setProducts(productData || [])
+      } catch (err) {
+        console.error('Failed to load seller dashboard data:', err)
+        if (isMounted) setError(err.message || 'Failed to load dashboard data.')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    if (user?.id) {
+      load()
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
+
+  const kpis = useMemo(() => {
+    const now = Date.now()
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000
+
+    const rfqsLast30 = rfqs.filter((rfq) => {
+      const created = rfq.createdAt ? new Date(rfq.createdAt).getTime() : 0
+      return created >= thirtyDaysAgo
+    })
+
+    const receivedCount = rfqsLast30.length
+    const quotedCount = rfqs.filter((r) => r.status === 'Quoted' || r.status === 'Accepted').length
+    const acceptedCount = rfqs.filter((r) => r.status === 'Accepted').length
+    const totalDecided = rfqs.filter(
+      (r) => r.status === 'Accepted' || r.status === 'Declined',
+    ).length
+    const winRate =
+      totalDecided > 0 ? `${Math.round((acceptedCount / totalDecided) * 100)}%` : '—'
+
+    return [
       {
         label: 'RFQs received (30 days)',
-        value: rfqs.length,
+        value: receivedCount,
         helper: 'Inbound demand from buyers',
         icon: Package,
         gradient: 'from-blue-300/70 via-blue-100/55 to-blue-200/70',
@@ -25,7 +79,7 @@ const SellerDashboard = () => {
       },
       {
         label: 'Quotes sent',
-        value: 3,
+        value: quotedCount,
         helper: 'Responses shared with buyers',
         icon: Store,
         gradient: 'from-emerald-300/70 via-emerald-100/55 to-emerald-200/70',
@@ -36,8 +90,8 @@ const SellerDashboard = () => {
       },
       {
         label: 'Win rate',
-        value: '62%',
-        helper: 'Accepted vs quoted RFQs (mock)',
+        value: winRate,
+        helper: 'Accepted vs declined RFQs',
         icon: FileText,
         gradient: 'from-yellow-300/90 via-yellow-100/75 to-yellow-200/90',
         borderColor: 'border-yellow-400',
@@ -46,9 +100,9 @@ const SellerDashboard = () => {
         textColor: 'text-yellow-950',
       },
       {
-        label: 'Avg response time',
-        value: '4.5 hrs',
-        helper: 'Median RFQ response time (mock)',
+        label: 'Open RFQs',
+        value: rfqs.filter((r) => r.status === 'Pending Response').length,
+        helper: 'Awaiting your quote',
         icon: InboxIcon,
         gradient: 'from-blue-300/75 via-blue-100/60 to-blue-200/85',
         borderColor: 'border-blue-500',
@@ -56,18 +110,33 @@ const SellerDashboard = () => {
         iconColor: 'text-blue-700',
         textColor: 'text-blue-700',
       },
-    ],
-    [],
+    ]
+  }, [rfqs])
+
+  const pendingRFQs = useMemo(
+    () => rfqs.filter((rfq) => rfq.status === 'Pending Response'),
+    [rfqs],
   )
 
-  const pendingRFQs = rfqs.filter((rfq) => rfq.status === 'Pending Response')
-  const rfqsNeedingAction =
-    pendingRFQs.length >= 3
-      ? pendingRFQs.slice(0, 3)
-      : [...pendingRFQs, ...rfqs.filter((rfq) => rfq.status !== 'Pending Response')].slice(0, 3)
+  const rfqsNeedingAction = useMemo(() => {
+    if (pendingRFQs.length >= 3) {
+      return pendingRFQs.slice(0, 3)
+    }
+    return [...pendingRFQs, ...rfqs.filter((rfq) => rfq.status !== 'Pending Response')].slice(0, 3)
+  }, [pendingRFQs, rfqs])
+
+  const topProducts = useMemo(
+    () => products.slice(0, 4),
+    [products],
+  )
 
   return (
     <div className="space-y-10">
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi) => {
           const Icon = kpi.icon
@@ -111,21 +180,31 @@ const SellerDashboard = () => {
           className="flex h-full flex-col border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
         >
           <div className="flex-1 space-y-4">
-            {rfqsNeedingAction.map((rfqItem) => (
+            {loading ? (
+              <p className="text-xs text-neutral-500">Loading RFQs...</p>
+            ) : rfqsNeedingAction.length === 0 ? (
+              <p className="text-xs text-neutral-500">
+                Great work — you don&apos;t have any RFQs waiting for a response right now.
+              </p>
+            ) : (
+              rfqsNeedingAction.map((rfqItem) => (
                 <article
-                  key={rfqItem.id}
+                  key={rfqItem._id}
                   className="rounded-3xl border border-surface-border bg-white/95 p-4 shadow-subtle transition hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">
-                        {rfqItem.buyer}
+                        {rfqItem.buyer?.name || rfqItem.buyer?.companyName || 'Buyer'}
                       </p>
                       <h3 className="mt-1 text-sm font-semibold text-neutral-900">
-                        {rfqItem.productName}
+                        {rfqItem.product?.name || 'Product'}
                       </h3>
                       <p className="mt-1 text-xs text-neutral-500">
-                        {rfqItem.quantity.toLocaleString()} units · {rfqItem.location}
+                        {rfqItem.quantity?.toLocaleString?.() ?? '-'} units ·{' '}
+                        {[rfqItem.deliveryLocation?.city, rfqItem.deliveryLocation?.state]
+                          .filter(Boolean)
+                          .join(', ') || 'Location N/A'}
                       </p>
                     </div>
                     <ProductStatusBadge
@@ -135,23 +214,29 @@ const SellerDashboard = () => {
                   <dl className="mt-3 grid gap-3 text-xs text-neutral-600 sm:grid-cols-3">
                     <div>
                       <dt className="text-neutral-500">RFQ ID</dt>
-                      <dd className="font-mono text-neutral-900">{rfqItem.id}</dd>
+                      <dd className="font-mono text-neutral-900">{rfqItem._id}</dd>
                     </div>
                     <div>
                       <dt className="text-neutral-500">Received</dt>
-                      <dd className="font-semibold text-neutral-900">{rfqItem.createdOn}</dd>
+                      <dd className="font-semibold text-neutral-900">
+                        {rfqItem.createdAt
+                          ? new Date(rfqItem.createdAt).toLocaleDateString()
+                          : '—'}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-neutral-500">Expires in</dt>
                       <dd className="font-semibold text-neutral-900">
-                        {rfqItem.expiresIn || '—'}
+                        {rfqItem.expiresAt
+                          ? new Date(rfqItem.expiresAt).toLocaleDateString()
+                          : '—'}
                       </dd>
                     </div>
                   </dl>
                   <div className="mt-3 flex justify-end">
                     <Button
                       as={Link}
-                      to={`/seller/rfqs/${rfqItem.id}/respond`}
+                      to={`/seller/rfqs/${rfqItem._id}/respond`}
                       size="sm"
                       className="rounded-full px-4 text-xs font-semibold"
                     >
@@ -159,11 +244,7 @@ const SellerDashboard = () => {
                     </Button>
                   </div>
                 </article>
-              ))}
-            {pendingRFQs.length === 0 && (
-              <p className="text-xs text-neutral-500">
-                Great work — you don&apos;t have any RFQs waiting for a response right now.
-              </p>
+              ))
             )}
           </div>
         </Card>
@@ -179,42 +260,54 @@ const SellerDashboard = () => {
           className="flex h-full flex-col border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white/95 to-emerald-50/70 shadow-[0_18px_50px_rgba(16,185,129,0.16)]"
         >
           <div className="flex-1 space-y-4">
-            {products.slice(0, 4).map((product) => {
-              const status = product.priceMin < 50 ? 'Pending' : 'Live'
-              return (
+            {loading ? (
+              <p className="text-xs text-neutral-500">Loading products...</p>
+            ) : topProducts.length === 0 ? (
+              <p className="text-xs text-neutral-500">
+                No products yet. Add your first SKU to see performance here.
+              </p>
+            ) : (
+              topProducts.map((product) => (
                 <article
-                  key={product.id}
+                  key={product._id}
                   className="rounded-3xl border border-surface-border bg-white/95 p-4 shadow-subtle transition hover:shadow-[0_18px_40px_rgba(15,23,42,0.12)]"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">SKU</p>
-                      <h3 className="mt-1 text-sm font-semibold text-neutral-900">{product.name}</h3>
+                      <h3 className="mt-1 text-sm font-semibold text-neutral-900">
+                        {product.name}
+                      </h3>
                       <p className="mt-1 line-clamp-2 text-xs text-neutral-500">
                         {product.shortDescription}
                       </p>
                     </div>
-                    <ProductStatusBadge status={status} />
+                    <ProductStatusBadge status={product.status || 'Pending'} />
                   </div>
                   <dl className="mt-3 grid gap-3 text-xs text-neutral-600 sm:grid-cols-3">
                     <div>
                       <dt className="text-neutral-500">Price band</dt>
                       <dd className="font-semibold text-neutral-900">
-                        ₹{product.priceMin} – ₹{product.priceMax}
+                        ₹{product.priceMin?.toLocaleString?.() ?? '-'} –{' '}
+                        {product.priceMax?.toLocaleString?.() ?? '-'}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-neutral-500">MOQ</dt>
-                      <dd className="font-semibold text-neutral-900">{product.moq}</dd>
+                      <dd className="font-semibold text-neutral-900">
+                        {product.moq?.toLocaleString?.() ?? '-'}
+                      </dd>
                     </div>
                     <div>
                       <dt className="text-neutral-500">Category</dt>
-                      <dd className="font-semibold text-neutral-900">{product.category}</dd>
+                      <dd className="font-semibold text-neutral-900">
+                        {product.category?.name || '—'}
+                      </dd>
                     </div>
                   </dl>
                 </article>
-              )
-            })}
+              ))
+            )}
           </div>
         </Card>
       </section>

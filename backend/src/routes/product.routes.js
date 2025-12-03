@@ -1,13 +1,15 @@
 import express from 'express'
 import { authenticate, authorize } from '../middlewares/auth.js'
 import { validateRequest } from '../middlewares/validateRequest.js'
-import { upload } from '../middlewares/upload.js'
+import { upload, uploadMultiple } from '../middlewares/upload.js'
 import {
   createProduct,
   getProduct,
   listProducts,
   productValidation,
   updateProduct,
+  deleteProduct,
+  adminUpdateProductStatus,
 } from '../controllers/product.controller.js'
 
 const router = express.Router()
@@ -142,7 +144,7 @@ router.post(
   '/',
   authenticate,
   authorize('seller'),
-  upload.single('image'),
+  uploadMultiple.array('images', 4),
   validateRequest(productValidation.upsert),
   createProduct,
 )
@@ -202,10 +204,16 @@ router.patch(
   '/:id',
   authenticate,
   authorize('seller', 'admin'),
-  upload.single('image'),
+  uploadMultiple.array('images', 4),
   validateRequest(productValidation.upsert),
   updateProduct,
 )
+
+// Delete product
+router.delete('/:id', authenticate, authorize('seller', 'admin'), deleteProduct)
+
+// Admin: update product status (moderation)
+router.patch('/:id/status', authenticate, authorize('admin'), adminUpdateProductStatus)
 
 export default router
 

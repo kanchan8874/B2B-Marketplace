@@ -1,24 +1,78 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Star, Truck, Tag, Heart, ShoppingBag, Check, MessageCircle } from 'lucide-react'
 import Button from '../../components/common/Button.jsx'
 import VerifiedBadge from '../../components/common/VerifiedBadge.jsx'
 import FormField from '../../components/common/FormField.jsx'
-import { products } from '../../mocks/products.js'
-import { categories } from '../../mocks/categories.js'
+import { getProductById } from '../../services/productService.js'
 
 const ProductDetails = () => {
   const { productId } = useParams()
   const navigate = useNavigate()
-  const product = useMemo(() => products.find((item) => item.id === productId) ?? products[0], [productId])
-  const category = categories.find((cat) => cat.id === product.categoryId)
-  
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const category = useMemo(() => product?.category || null, [product])
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState(null)
   const [pincode, setPincode] = useState('')
-  
-  const hydratedImages = product.gallery?.length > 0 
-    ? product.gallery.map((img) => img?.startsWith('http') ? img : 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80')
+
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await getProductById(productId)
+        if (!isMounted) return
+        if (!data) {
+          setError('Product not found.')
+        } else {
+          setProduct(data)
+        }
+      } catch (err) {
+        console.error('Failed to load product details:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load product details.')
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [productId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600" />
+          <p className="text-sm text-neutral-600">Loading product...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <div className="mx-auto max-w-xl">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-800">
+          {error || 'Product not found. Please go back to the catalogue and try again.'}
+        </div>
+      </div>
+    )
+  }
+
+  const hydratedImages =
+    product.images?.length > 0
+      ? product.images.map((img) =>
+          typeof img === 'string' && img.startsWith('http')
+            ? img
+            : 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
+        )
     : ['https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80']
   
   // Ensure we have at least 4 images for the 2x2 grid
@@ -34,14 +88,16 @@ const ProductDetails = () => {
   }
   
   // Calculate discount (mock calculation)
-  const mrp = Math.round(product.priceMax * 1.8)
-  const discount = Math.round(((mrp - product.priceMin) / mrp) * 100)
+  const mrp = Math.round((product.priceMax || 0) * 1.8)
+  const discount = product.priceMin ? Math.round(((mrp - product.priceMin) / mrp) * 100) : 0
   
   // Mock sizes for B2B products
   const sizes = [
     { label: `Standard Pack (${product.moq} units)`, price: product.priceMin, value: 'standard' },
     { label: `Bulk Pack (${product.moq * 2} units)`, price: Math.round(product.priceMin * 0.95), value: 'bulk' },
   ]
+
+  const sellerName = product.seller?.name || product.seller?.companyName || 'Seller'
 
   return (
     <div className="space-y-6">
@@ -95,8 +151,8 @@ const ProductDetails = () => {
         <div className="space-y-6">
           {/* Brand & Product Name */}
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-neutral-500 mb-2">
-              {product.seller}
+            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
+              {sellerName}
             </p>
             <h1 className="text-2xl font-bold text-neutral-900 leading-tight mb-2">
               {product.name}
@@ -114,14 +170,16 @@ const ProductDetails = () => {
           <div className="space-y-2">
             <div className="flex items-baseline gap-3">
               <span className="text-3xl font-bold text-neutral-900">
-                ₹{product.priceMin.toLocaleString()}
+                ₹{product.priceMin?.toLocaleString?.() ?? '-'}
               </span>
-              <span className="text-lg text-neutral-500 line-through">
-                ₹{mrp.toLocaleString()}
-              </span>
-              <span className="text-sm font-semibold text-emerald-600">
-                ({discount}% OFF)
-              </span>
+              {product.priceMax && (
+                <>
+                  <span className="text-lg text-neutral-500 line-through">
+                    ₹{mrp.toLocaleString()}
+                  </span>
+                  <span className="text-sm font-semibold text-emerald-600">({discount}% OFF)</span>
+                </>
+              )}
             </div>
             <p className="text-xs text-neutral-500">inclusive of all taxes</p>
           </div>
@@ -149,7 +207,7 @@ const ProductDetails = () => {
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button
-              onClick={() => navigate(`/buyer/rfq/${product.id}`)}
+              onClick={() => navigate(`/buyer/rfq/${product._id}`)}
               size="lg"
               className="flex-1 flex items-center justify-center gap-2"
             >
@@ -157,7 +215,7 @@ const ProductDetails = () => {
               Send RFQ
             </Button>
             <Button
-              onClick={() => navigate(`/buyer/messages/contact?productId=${product.id}`)}
+              onClick={() => navigate(`/buyer/messages/contact?productId=${product._id}`)}
               variant="secondary"
               size="lg"
               className="flex-1 flex items-center justify-center gap-2"
@@ -239,11 +297,11 @@ const ProductDetails = () => {
           <div className="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50/40 via-white/95 to-teal-50/40 p-5">
             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Seller Information</p>
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-base font-semibold text-neutral-900">{product.seller}</p>
+              <p className="text-base font-semibold text-neutral-900">{sellerName}</p>
               {product.sellerVerified && <VerifiedBadge size="sm" />}
             </div>
             <p className="text-sm text-neutral-600">
-              {product.city}, {product.state}
+              {product.city || 'N/A'}, {product.state || 'N/A'}
             </p>
             {category && (
               <p className="text-xs text-neutral-500 mt-2">

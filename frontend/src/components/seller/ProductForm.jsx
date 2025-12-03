@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import { useState } from 'react'
 import FormField from '../common/FormField.jsx'
 import Button from '../common/Button.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
@@ -32,18 +33,19 @@ const validationSchema = {
   stock: [positiveNumber('Available stock')],
 }
 
-const ProductForm = ({ onSubmit, submitLabel }) => {
+const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) => {
+  const startingValues = initialValues || initialState
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
-    initialState,
+    startingValues,
     validationSchema,
     { validateOnChange: false },
   )
+  const [mediaFiles, setMediaFiles] = useState([])
 
   const handleSubmit = (event) => {
     event.preventDefault()
     if (!validateForm()) return
-    onSubmit?.(values)
-    resetForm()
+    onSubmit?.({ ...values, mediaFiles })
   }
 
   return (
@@ -69,13 +71,20 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
               id="category"
               name="category"
               label="Category"
-              required
-              value={values.category}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              placeholder="Select primary category"
-              error={errors.category}
-            />
+            required
+            as="select"
+            value={values.category}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={errors.category}
+          >
+            <option value="">Select primary category</option>
+            {categories.map((cat) => (
+              <option key={cat._id} value={cat._id}>
+                {cat.name}
+              </option>
+            ))}
+          </FormField>
             <FormField
               id="subcategory"
               name="subcategory"
@@ -235,7 +244,7 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
             Media upload
           </p>
-          <MediaUploader />
+          <MediaUploader onChange={setMediaFiles} />
         </div>
       </div>
 
@@ -260,6 +269,8 @@ const ProductForm = ({ onSubmit, submitLabel }) => {
 ProductForm.propTypes = {
   onSubmit: PropTypes.func,
   submitLabel: PropTypes.string,
+  categories: PropTypes.arrayOf(PropTypes.object),
+  initialValues: PropTypes.object,
 }
 
 export default ProductForm

@@ -6,32 +6,34 @@ import Button from '../../components/common/Button.jsx'
 import ProductListTable from '../../components/seller/ProductListTable.jsx'
 import EmptyState from '../../components/common/EmptyState.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
-import { products } from '../../mocks/products.js'
 import { getSellerSubscription } from '../../services/subscriptionService.js'
+import { listProducts, deleteProduct } from '../../services/productService.js'
+import { useAuth } from '../../hooks/useAuth.js'
 
 const ITEMS_PER_PAGE = 7
 
 const ProductCatalog = () => {
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [statusFilter, setStatusFilter] = useState('All')
   const [subscription, setSubscription] = useState(null)
-  const [items, setItems] = useState(() =>
-    products.map((product) => {
-      const statuses = ['Live', 'Pending', 'Draft']
-      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)]
-      return {
-        ...product,
-        status: randomStatus,
-      }
-    }),
-  )
+  const [items, setItems] = useState([])
   const [productToDelete, setProductToDelete] = useState(null)
-  const [lastDeleted, setLastDeleted] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     loadSubscription()
   }, [])
+
+  useEffect(() => {
+    const sellerId = user?.id || user?._id
+    if (sellerId) {
+      loadProducts()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, user?.id, user?._id])
 
   const loadSubscription = async () => {
     try {
@@ -44,6 +46,25 @@ const ProductCatalog = () => {
     }
   }
 
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+      setError('')
+      const sellerId = user?.id || user?._id
+      const data = await listProducts({
+        includeAuth: true,
+        seller: sellerId,
+        status: statusFilter === 'All' ? undefined : statusFilter,
+      })
+      setItems(data || [])
+    } catch (error) {
+      console.error('Failed to load products:', error)
+      setError(error.message || 'Failed to load products.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const filteredItems =
     statusFilter === 'All' ? items : items.filter((product) => product.status === statusFilter)
 
@@ -53,11 +74,11 @@ const ProductCatalog = () => {
   const paginatedItems = filteredItems.slice(startIndex, endIndex)
 
   const handleEdit = (row) => {
-    navigate(`/seller/products/${row.id}/edit`)
+    navigate(`/seller/products/${row._id}/edit`)
   }
 
   const handleView = (row) => {
-    navigate(`/seller/products/${row.id}/view`)
+    navigate(`/seller/products/${row._id}/view`)
   }
 
   const handleDelete = (row) => {
@@ -70,30 +91,27 @@ const ProductCatalog = () => {
 
   const handleConfirmDelete = () => {
     if (!productToDelete) return
+    // Remove locally, then call API
     setItems((prev) => {
-      const deleted = prev.find((product) => product.id === productToDelete.id)
-      const next = prev.filter((product) => product.id !== productToDelete.id)
+      const deleted = prev.find((product) => product._id === productToDelete._id)
+      const next = prev.filter((product) => product._id !== productToDelete._id)
       const maxPage = Math.max(1, Math.ceil(next.length / ITEMS_PER_PAGE))
       if (page > maxPage) {
         setPage(maxPage)
       }
-      if (deleted) {
-        setLastDeleted(deleted)
-      }
       return next
     })
+    const toDelete = productToDelete
     setProductToDelete(null)
+    deleteProduct(toDelete._id).catch((error) => {
+      console.error('Failed to delete product:', error)
+      // On error, refresh list to stay consistent
+      loadProducts()
+    })
   }
 
   const handleCancelDelete = () => {
     setProductToDelete(null)
-  }
-
-  const handleUndoDelete = () => {
-    if (!lastDeleted) return
-    setItems((prev) => [lastDeleted, ...prev])
-    setLastDeleted(null)
-    setPage(1)
   }
 
   return (
@@ -181,7 +199,14 @@ const ProductCatalog = () => {
         }
         className="border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
       >
-        {items.length ? (
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+        {loading ? (
+          <div className="py-10 text-center text-sm text-neutral-600">Loading products...</div>
+        ) : items.length ? (
           <div className="space-y-5">
             <ProductListTable
               items={paginatedItems}
@@ -254,32 +279,6 @@ const ProductCatalog = () => {
         </div>
       )}
 
-      {/* Undo snackbar for accidental delete */}
-      {lastDeleted && (
-        <div className="fixed bottom-6 right-6 z-40 max-w-sm rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
-          <p className="text-xs font-medium text-neutral-700">
-            Product{' '}
-            <span className="font-semibold text-neutral-900">{lastDeleted.name}</span> removed from
-            your catalogue.
-          </p>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={handleUndoDelete}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-full px-3 py-1"
-            >
-              Undo
-            </button>
-            <button
-              type="button"
-              onClick={() => setLastDeleted(null)}
-              className="text-[11px] text-neutral-500 hover:text-neutral-700 focus:outline-none"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

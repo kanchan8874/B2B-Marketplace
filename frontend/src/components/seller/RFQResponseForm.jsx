@@ -3,12 +3,8 @@ import { useState } from 'react'
 import FormField from '../common/FormField.jsx'
 import Button from '../common/Button.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
-import {
-  characterLimit,
-  minLength,
-  positiveNumber,
-  required,
-} from '../../utils/validators.js'
+import { characterLimit, minLength, positiveNumber, required } from '../../utils/validators.js'
+import { respondToRFQ } from '../../services/rfqService.js'
 
 const initialValues = { finalPrice: '', deliveryTime: '', terms: '' }
 
@@ -20,17 +16,38 @@ const validationSchema = {
 
 const RFQResponseForm = ({ rfqId }) => {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
     initialValues,
     validationSchema,
     { validateOnChange: false },
   )
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault()
     if (!validateForm()) return
-    setSubmitted(true)
-    resetForm()
+
+    setSubmitting(true)
+    setSubmitError('')
+
+    try {
+      const finalPrice = Number(values.finalPrice)
+      const combinedTerms = `Delivery timeline: ${values.deliveryTime}\n${values.terms}`
+
+      await respondToRFQ(rfqId, {
+        finalPrice,
+        terms: combinedTerms,
+      })
+
+      setSubmitted(true)
+      resetForm()
+    } catch (error) {
+      console.error('Failed to submit RFQ response:', error)
+      setSubmitError(error.message || 'Failed to submit response. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
@@ -83,6 +100,9 @@ const RFQResponseForm = ({ rfqId }) => {
         error={errors.terms}
         helper="Keep it simple: payment terms, validity of quote, and any key conditions."
       />
+      {submitError && (
+        <p className="text-xs text-red-600">{submitError}</p>
+      )}
       <div className="flex items-center justify-end gap-3">
         <Button
           type="button"
@@ -93,8 +113,8 @@ const RFQResponseForm = ({ rfqId }) => {
         >
           Clear
         </Button>
-        <Button type="submit" size="md" className="rounded-full px-6 text-sm">
-          Submit response
+        <Button type="submit" size="md" className="rounded-full px-6 text-sm" disabled={submitting}>
+          {submitting ? 'Submitting...' : 'Submit response'}
         </Button>
       </div>
     </form>

@@ -37,7 +37,16 @@ export const isPriceValidityExpired = (product) => {
   if (!product.priceValidityDate) {
     return false
   }
-  return new Date(product.priceValidityDate) < new Date()
+  const validityDate = new Date(product.priceValidityDate)
+  const now = new Date()
+
+  // Compare at date-level only (ignore time) so that validity
+  // remains active for the entire calendar day.
+  const validityDay = new Date(validityDate.getFullYear(), validityDate.getMonth(), validityDate.getDate())
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  // Expired only if validity day is strictly before today
+  return validityDay < today
 }
 
 /**

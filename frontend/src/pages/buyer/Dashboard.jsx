@@ -3,13 +3,16 @@ import { Boxes, Users, PackageSearch, Inbox, ChevronLeft, ChevronRight, Shopping
 import { useRef, useState, useEffect, useCallback } from 'react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
-import { categories } from '../../mocks/categories.js'
-import { products } from '../../mocks/products.js'
+import { getCategories } from '../../services/categoryService.js'
+import { getBuyerDashboardSummary, getDashboardProducts } from '../../services/buyerService.js'
 
 const Dashboard = () => {
-  const featuredCategories = categories.slice(0, 6)
-  const recentProducts = products.slice(0, 5)
-  const trendingProducts = products.slice(0, 6)
+  const [featuredCategories, setFeaturedCategories] = useState([])
+  const [recentProducts, setRecentProducts] = useState([])
+  const [trendingProducts, setTrendingProducts] = useState([])
+  const [metricsData, setMetricsData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
   const carouselRef = useRef(null)
   const categoryCarouselRef = useRef(null)
@@ -68,6 +71,61 @@ const Dashboard = () => {
       setCanScrollRight(
         carouselRef.current.scrollLeft < carouselRef.current.scrollWidth - carouselRef.current.clientWidth - 10
       )
+    }
+  }, [])
+
+  // Load buyer dashboard data from APIs on mount
+  useEffect(() => {
+    let isMounted = true
+
+    const loadData = async () => {
+      setLoading(true)
+      setError('')
+
+      try {
+        const [summary, categoriesData, productsData] = await Promise.all([
+          getBuyerDashboardSummary(),
+          getCategories(),
+          getDashboardProducts({}),
+        ])
+
+        if (!isMounted) return
+
+        setMetricsData(summary)
+        setFeaturedCategories((categoriesData || []).slice(0, 6))
+
+        const productsRaw = productsData || []
+
+        // Normalise product shape coming from API so UI code is simple and robust
+        const products = productsRaw.map((p) => ({
+          id: p._id,
+          name: p.name,
+          priceMin: p.priceMin ?? 0,
+          priceMax: p.priceMax ?? 0,
+          moq: p.moq ?? 0,
+          categoryId: p.category?._id,
+          categoryName: p.category?.name || 'Product',
+          gallery: Array.isArray(p.images) ? p.images : [],
+        }))
+
+        setRecentProducts(products.slice(0, 5))
+        setTrendingProducts(products.slice(0, 6))
+      } catch (err) {
+        console.error('Failed to load buyer dashboard data:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load dashboard data.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    loadData()
+
+    return () => {
+      isMounted = false
     }
   }, [])
 
@@ -258,12 +316,12 @@ const Dashboard = () => {
     }
   }, [isPaused, checkScrollButtons])
 
-  // Buyer-facing KPIs, mirroring seller-style metrics
+  // Buyer-facing KPIs, now using API-driven metrics where available
   const metrics = [
     {
-      label: 'RFQs raised (30 days)',
-      value: 8,
-      helper: 'Requests you created for suppliers',
+      label: 'Open RFQs',
+      value: metricsData?.openRFQs ?? 0,
+      helper: 'Requests awaiting supplier quotes',
       icon: Inbox,
       color: '#2563EB',
       gradient: 'from-blue-700/20 via-blue-400/15 to-blue-500/20',
@@ -273,9 +331,9 @@ const Dashboard = () => {
       textColor: 'text-blue-700',
     },
     {
-      label: 'Quotes received',
-      value: 24,
-      helper: 'Supplier responses on your RFQs',
+      label: 'Live products',
+      value: metricsData?.productsCount ?? trendingProducts.length,
+      helper: 'SKUs available to browse and shortlist',
       icon: PackageSearch,
       color: '#20B2AA',
       gradient: 'from-teal-500/20 via-teal-400/15 to-teal-500/20',
@@ -297,9 +355,9 @@ const Dashboard = () => {
       textColor: 'text-yellow-700',
     },
     {
-      label: 'Active suppliers',
-      value: 12,
-      helper: 'Vendors who quoted recently',
+      label: 'Active categories',
+      value: metricsData?.categoriesCount ?? featuredCategories.length,
+      helper: 'Clusters you can browse today',
       icon: Users,
       color: '#2563EB',
       gradient: 'from-blue-500/20 via-blue-400/15 to-blue-500/20',
@@ -312,6 +370,11 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-10">
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
       <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => {
           const Icon = metric.icon
@@ -545,8 +608,10 @@ const Dashboard = () => {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {recentProducts.map((product, index) => {
-              const categoryName = categories.find((cat) => cat.id === product.categoryId)?.name || 'Product'
-              const productImage = product.gallery?.[0] || 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
+              const categoryName = product.categoryName || 'Product'
+              const productImage =
+                product.gallery?.[0] ||
+                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
               
               // Color schemes matching the image style
               const colorSchemes = [

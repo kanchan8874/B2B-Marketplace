@@ -1,12 +1,16 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
+import { signup } from '../../services/authService.js'
 import {
   email as emailRule,
   gst,
   minLength,
   mobile,
   optionalCharacterLimit,
+  password as passwordRule,
   required,
 } from '../../utils/validators.js'
 
@@ -16,6 +20,7 @@ const initialValues = {
   sellerCity: '',
   sellerPhone: '',
   sellerEmail: '',
+  sellerPassword: '',
   sellerGst: '',
 }
 
@@ -25,6 +30,7 @@ const validationSchema = {
   sellerCity: [required('City / State'), minLength('City / State', 3)],
   sellerPhone: [mobile('Primary mobile')],
   sellerEmail: [emailRule('Official email')],
+  sellerPassword: [passwordRule('Password')],
   sellerGst: [gst('GST number')],
 }
 
@@ -32,23 +38,64 @@ const sellerIllustration =
   'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const SellerSignup = () => {
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const navigate = useNavigate()
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
     initialValues,
     validationSchema,
     { validateOnChange: false },
   )
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault()
+    setSubmitError('')
+    setSuccessMessage('')
+
     if (!validateForm()) return
-    resetForm()
+
+    setSubmitting(true)
+    try {
+      // Parse city and state from sellerCity (format: "City, State")
+      const cityStateParts = values.sellerCity.split(',').map((s) => s.trim())
+      const city = cityStateParts[0] || ''
+      const state = cityStateParts[1] || ''
+
+      // Prepare signup data
+      const signupData = {
+        name: values.sellerBusiness,
+        email: values.sellerEmail,
+        password: values.sellerPassword,
+        role: 'seller',
+        companyName: values.sellerBusiness,
+        phone: values.sellerPhone,
+        location: {
+          city: city,
+          state: state,
+          country: 'India', // Default to India
+        },
+      }
+
+      const response = await signup(signupData)
+
+      if (response.success) {
+        resetForm()
+        setSuccessMessage('Seller registered successfully. Please login with your email and password.')
+      }
+    } catch (error) {
+      console.error('Seller signup error:', error)
+      setSubmitError(error.message || 'Failed to register. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="flex justify-center bg-neutral-50 px-4 py-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-4xl my-0">
         {/* Main Card - Two Column Layout (Form + Illustration) */}
-        <div className="rounded-4xl bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
+        <div className="relative rounded-4xl bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
             {/* Left Column - Signup Form */}
             <div className="p-6 lg:p-8 lg:min-h-[600px] flex flex-col justify-center">
@@ -57,6 +104,12 @@ const SellerSignup = () => {
                 <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Seller registration</h2>
                 <p className="text-xs text-neutral-600 font-medium">Submit your business details for approval.</p>
               </div>
+
+              {successMessage && (
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  {successMessage}
+                </div>
+              )}
 
               {/* Signup Form */}
               <form className="mt-1 space-y-3.5 transition-all duration-200 ease-out" onSubmit={onSubmit} noValidate>
@@ -123,6 +176,19 @@ const SellerSignup = () => {
                   wrapperClassName="space-y-2"
                 />
                 <FormField
+                  id="sellerPassword"
+                  name="sellerPassword"
+                  label="Password"
+                  required
+                  type="password"
+                  placeholder="Create a strong password"
+                  value={values.sellerPassword}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.sellerPassword}
+                  wrapperClassName="space-y-2"
+                />
+                <FormField
                   id="sellerGst"
                   name="sellerGst"
                   label="GST (optional)"
@@ -133,8 +199,15 @@ const SellerSignup = () => {
                   error={errors.sellerGst}
                   wrapperClassName="space-y-2"
                 />
-                <Button type="submit" size="md" className="w-full mt-2">
-                  Submit for approval
+
+                {submitError && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                    {submitError}
+                  </div>
+                )}
+                
+                <Button type="submit" size="md" className="w-full mt-2" disabled={submitting}>
+                  {submitting ? 'Submitting...' : 'Submit for approval'}
                 </Button>
               </form>
             </div>

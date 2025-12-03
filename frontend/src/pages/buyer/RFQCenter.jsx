@@ -1,22 +1,48 @@
-import { useContext, useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Filter, Plus, Eye } from 'lucide-react'
+import { Search, Filter, Eye } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
-import { RFQContext } from '../../context/RFQContext.jsx'
+import { listRFQs } from '../../services/rfqService.js'
 
 const ITEMS_PER_PAGE = 5
 
 const RFQCenter = () => {
-  const { rfqs } = useContext(RFQContext)
   const navigate = useNavigate()
+  const [rfqs, setRfqs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState('all')
   const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await listRFQs()
+        if (!isMounted) return
+        setRfqs(data)
+      } catch (err) {
+        console.error('Failed to load RFQs:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load RFQs.')
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filteredRFQs = useMemo(() => {
     let result = rfqs
@@ -62,6 +88,11 @@ const RFQCenter = () => {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {error}
+        </div>
+      )}
       <div className="rounded-[32px] border border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 p-6 shadow-[0_20px_60px_rgba(37,99,235,0.14)]">
         <div className="mb-6 flex items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold text-neutral-900">Requests For Quote</h1>
@@ -147,7 +178,13 @@ const RFQCenter = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {paginatedRFQs.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-neutral-500">
+                    Loading RFQs...
+                  </td>
+                </tr>
+              ) : paginatedRFQs.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-sm text-neutral-500">
                     No RFQs found. Start sending requests from any product page.
@@ -160,26 +197,34 @@ const RFQCenter = () => {
                     className="group bg-white/90 transition-colors hover:bg-blue-50/60"
                   >
                     <td className="px-4 py-4 first:rounded-l-2xl">
-                      <p className="font-semibold text-neutral-900">{rfq.productName}</p>
+                      <p className="font-semibold text-neutral-900">
+                        {rfq.product?.name || 'Product'}
+                      </p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="font-medium text-neutral-800">{rfq.quantity.toLocaleString()}</p>
+                      <p className="font-medium text-neutral-800">{rfq.quantity?.toLocaleString?.() ?? '-'}</p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-neutral-800">{rfq.seller || 'N/A'}</p>
+                      <p className="text-neutral-800">
+                        {rfq.seller?.name || rfq.seller?.companyName || 'N/A'}
+                      </p>
                     </td>
                     <td className="px-4 py-4">
                       <StatusTag tone={getStatusTone(rfq.status)}>{rfq.status}</StatusTag>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-neutral-700">{rfq.expiresIn || 'N/A'}</p>
+                      <p className="text-neutral-700">
+                        {rfq.expiresAt
+                          ? new Date(rfq.expiresAt).toLocaleDateString()
+                          : 'N/A'}
+                      </p>
                     </td>
                     <td className="px-4 py-4 last:rounded-r-2xl">
                       <Button
                         size="sm"
                         variant="secondary"
                         className="h-8 gap-1.5 rounded-full border border-neutral-200 bg-white/90 px-3 text-xs font-semibold text-neutral-800 hover:border-brand-primary/60 hover:text-brand-primary"
-                        onClick={() => navigate(`/buyer/rfq/${rfq.id}`)}
+                        onClick={() => navigate(`/buyer/rfqs/${rfq._id}`)}
                       >
                         <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                         View details

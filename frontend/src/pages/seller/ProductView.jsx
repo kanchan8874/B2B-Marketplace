@@ -1,41 +1,80 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Edit3, MapPin, Layers, Package, Tag } from 'lucide-react'
 import Button from '../../components/common/Button.jsx'
 import Card from '../../components/common/Card.jsx'
-import { products } from '../../mocks/products.js'
+import { getProductById } from '../../services/productService.js'
 
 const SellerProductView = () => {
   const { productId } = useParams()
   const navigate = useNavigate()
-
-  const product = useMemo(
-    () => products.find((item) => item.id === productId) ?? products[0],
-    [productId],
-  )
-
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [selectedImage, setSelectedImage] = useState(0)
 
-  const hydratedImages =
-    product.gallery?.length > 0
-      ? product.gallery.map((img) =>
-          img?.startsWith('http')
-            ? img
-            : 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
-        )
-      : ['https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80']
-
-  const displayImages = []
-  if (hydratedImages.length >= 4) {
-    displayImages.push(...hydratedImages.slice(0, 4))
-  } else {
-    displayImages.push(...hydratedImages)
-    while (displayImages.length < 4) {
-      displayImages.push(
-        hydratedImages[displayImages.length % hydratedImages.length] ||
-          'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
-      )
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await getProductById(productId)
+        if (!isMounted) return
+        if (!data) {
+          setError('Product not found.')
+        } else {
+          setProduct(data)
+        }
+      } catch (err) {
+        console.error('Failed to load product:', err)
+        if (isMounted) setError(err.message || 'Failed to load product.')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
     }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [productId])
+
+  const hydratedImages = useMemo(() => {
+    if (!product?.images?.length) {
+      return [
+        'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
+      ]
+    }
+    return product.images.map((img) =>
+      typeof img === 'string' && img.startsWith('http')
+        ? img
+        : 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
+    )
+  }, [product])
+
+  const displayImages = hydratedImages
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600" />
+          <p className="text-sm text-neutral-600">Loading product...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    return (
+      <div className="mx-auto max-w-xl">
+        <Card className="border-red-200 bg-red-50">
+          <p className="px-4 py-6 text-sm text-red-800">
+            {error || 'Product not found. Please go back to your catalogue and try again.'}
+          </p>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -55,7 +94,7 @@ const SellerProductView = () => {
             variant="secondary"
             size="sm"
             className="rounded-full px-4 text-xs"
-            onClick={() => navigate(`/seller/products/${product.id}/edit`)}
+            onClick={() => navigate(`/seller/products/${product._id}/edit`)}
           >
             <Edit3 className="mr-1.5 h-4 w-4" aria-hidden="true" />
             Edit product
@@ -65,7 +104,7 @@ const SellerProductView = () => {
 
       <section className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)] items-stretch">
         {/* Left: image gallery */}
-        <div>
+        <div className="relative">
           <div className="aspect-square overflow-hidden rounded-4xl bg-neutral-100 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
             <img
               src={displayImages[selectedImage] || displayImages[0]}
@@ -77,6 +116,28 @@ const SellerProductView = () => {
               }}
             />
           </div>
+
+          {/* Image pagination dots */}
+          {displayImages.length > 1 && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full bg-black/30 px-3 py-1 backdrop-blur">
+                {displayImages.map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`h-2.5 w-2.5 rounded-full border border-white/60 transition-all ${
+                      selectedImage === index ? 'bg-white shadow-sm scale-110' : 'bg-white/30'
+                    }`}
+                    onClick={() => setSelectedImage(index)}
+                    aria-label={`View image ${index + 1}`}
+                    aria-pressed={selectedImage === index}
+                    // allow click but keep wrapper pointer-events-none
+                    style={{ pointerEvents: 'auto' }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: product meta */}
@@ -94,7 +155,9 @@ const SellerProductView = () => {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-neutral-500">Primary supplier</p>
-                  <p className="mt-0.5 text-base font-semibold text-neutral-900">{product.seller}</p>
+                  <p className="mt-0.5 text-base font-semibold text-neutral-900">
+                    {product.seller?.name || product.seller?.companyName || 'You'}
+                  </p>
                 </div>
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                   Internal view
@@ -115,18 +178,19 @@ const SellerProductView = () => {
                       <Package className="h-4 w-4 text-neutral-500" />
                       Price band
                     </dt>
-                    <dd className="text-base font-semibold text-neutral-900">
-                      ₹{product.priceMin.toLocaleString()} – ₹{product.priceMax.toLocaleString()}
-                    </dd>
+                      <dd className="text-base font-semibold text-neutral-900">
+                        ₹{product.priceMin?.toLocaleString?.() ?? '-'} –{' '}
+                        {product.priceMax?.toLocaleString?.() ?? '-'}
+                      </dd>
                   </div>
                   <div className="space-y-1">
                     <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
                       <Layers className="h-4 w-4 text-neutral-500" />
                       MOQ
                     </dt>
-                    <dd className="text-base font-semibold text-neutral-900">
-                      {product.moq.toLocaleString()} units
-                    </dd>
+                      <dd className="text-base font-semibold text-neutral-900">
+                        {product.moq?.toLocaleString?.() ?? '-'} units
+                      </dd>
                   </div>
                 </dl>
               </div>
@@ -142,17 +206,19 @@ const SellerProductView = () => {
                       <MapPin className="h-4 w-4 text-neutral-500" />
                       Dispatch city / state
                     </dt>
-                    <dd className="text-base font-semibold text-neutral-900">
-                      {product.city}, {product.state}
-                    </dd>
+                      <dd className="text-base font-semibold text-neutral-900">
+                        {product.city || 'N/A'}, {product.state || 'N/A'}
+                      </dd>
                   </div>
-                  {product.categoryId && (
+                  {product.category && (
                     <div className="space-y-1">
                       <dt className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
                         <Tag className="h-4 w-4 text-neutral-500" />
                         Category
                       </dt>
-                      <dd className="text-base font-semibold text-neutral-900">{product.categoryId}</dd>
+                      <dd className="text-base font-semibold text-neutral-900">
+                        {product.category.name || 'Category'}
+                      </dd>
                     </div>
                   )}
                 </dl>

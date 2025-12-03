@@ -1,8 +1,10 @@
 import PropTypes from 'prop-types'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import FormField from '../common/FormField.jsx'
 import Button from '../common/Button.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
+import { createRFQ } from '../../services/rfqService.js'
 import {
   integer,
   minLength,
@@ -19,31 +21,75 @@ const validationSchema = {
   notes: [optionalMinLength('Additional notes', 10), optionalCharacterLimit('Additional notes', 400)],
 }
 
-const RFQForm = ({ productName }) => {
+const RFQForm = ({ product }) => {
+  const navigate = useNavigate()
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
     initialValues,
     validationSchema,
     { validateOnChange: false },
   )
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault()
+    setSubmitError('')
     if (!validateForm()) return
-    setSubmitted(true)
-    resetForm()
+
+    if (!product?._id || !product?.seller?._id) {
+      setSubmitError('Product or seller information is missing.')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      // Parse delivery location into city/state/country
+      const parts = values.location.split(',').map((p) => p.trim())
+      const city = parts[0] || values.location
+      const state = parts[1] || parts[0] || values.location
+      const country = parts[2] || 'India'
+
+      await createRFQ({
+        product: product._id,
+        seller: product.seller._id,
+        quantity: Number(values.quantity),
+        deliveryLocation: {
+          city,
+          state,
+          country,
+        },
+        // notes can be added later to schema if needed
+      })
+
+      setSubmitted(true)
+      resetForm()
+    } catch (error) {
+      console.error('Failed to create RFQ:', error)
+      setSubmitError(error.message || 'Failed to send RFQ. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (submitted) {
     return (
-      <div className="rounded-3xl border border-status-success/50 bg-status-success/5 p-6 text-center text-status-success">
-        RFQ sent successfully. The seller will reach out shortly.
+      <div className="space-y-4 rounded-3xl border border-status-success/50 bg-status-success/5 p-6 text-center text-status-success">
+        <p className="font-semibold">RFQ sent successfully. The seller will reach out shortly.</p>
+        <Button
+          size="md"
+          variant="secondary"
+          className="rounded-full"
+          onClick={() => navigate('/buyer/rfqs')}
+        >
+          View all RFQs
+        </Button>
       </div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6" aria-label={`Send RFQ for ${productName}`} noValidate>
+    <form onSubmit={onSubmit} className="space-y-6" aria-label={`Send RFQ for ${product?.name || 'product'}`} noValidate>
       <FormField
         id="quantity"
         name="quantity"
@@ -79,8 +125,13 @@ const RFQForm = ({ productName }) => {
         helper="Mention delivery timelines, packaging, quality specs"
         error={errors.notes}
       />
+      {submitError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {submitError}
+        </div>
+      )}
       <Button type="submit" size="lg" className="w-full">
-        Send RFQ
+        {submitting ? 'Sending...' : 'Send RFQ'}
       </Button>
     </form>
   )

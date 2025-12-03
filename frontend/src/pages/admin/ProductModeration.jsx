@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Package, Search, AlertCircle } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
@@ -7,21 +7,13 @@ import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
-import { products } from '../../mocks/products.js'
-
-// Enrich products with status (in real app, this comes from API)
-const enrichedProducts = products.map((product, index) => ({
-  ...product,
-  status: index === 1 || index === 2 ? 'Pending' : 'Live',
-  submittedOn: '24 Nov 2025',
-  category: 'Food & Agriculture',
-}))
+import { listProducts, updateProductStatusAdmin } from '../../services/productService.js'
 
 const renderProductCell = (row) => (
   <div className="flex items-center gap-3">
     <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
-      {row.gallery && row.gallery[0] ? (
-        <img src={row.gallery[0]} alt={row.name} className="h-full w-full object-cover" />
+      {row.images && row.images[0] ? (
+        <img src={row.images[0]} alt={row.name} className="h-full w-full object-cover" />
       ) : (
         <span className="text-xs font-semibold text-neutral-500">{row.name?.charAt(0)}</span>
       )}
@@ -39,8 +31,8 @@ const renderProductCell = (row) => (
 
 const allProductsColumns = (onView) => [
   { header: 'Product', accessor: 'name', cell: renderProductCell },
-  { header: 'Seller', accessor: 'seller' },
-  { header: 'Category', accessor: 'category' },
+  { header: 'Seller', accessor: (row) => row.seller?.name || '—' },
+  { header: 'Category', accessor: (row) => row.category?.name || '—' },
   { header: 'Price Range', accessor: (row) => `₹${row.priceMin} - ₹${row.priceMax}` },
   { header: 'MOQ', accessor: (row) => row.moq.toLocaleString() },
   { header: 'Submitted', accessor: 'submittedOn' },
@@ -81,8 +73,8 @@ const allProductsColumns = (onView) => [
 
 const createPendingProductsColumns = (onActionClick, onView) => [
   { header: 'Product', accessor: 'name', cell: renderProductCell },
-  { header: 'Seller', accessor: 'seller' },
-  { header: 'Category', accessor: 'category' },
+  { header: 'Seller', accessor: (row) => row.seller?.name || '—' },
+  { header: 'Category', accessor: (row) => row.category?.name || '—' },
   { header: 'Price Range', accessor: (row) => `₹${row.priceMin} - ₹${row.priceMax}` },
   { header: 'MOQ', accessor: (row) => row.moq.toLocaleString() },
   { header: 'Submitted', accessor: 'submittedOn' },
@@ -125,11 +117,36 @@ const ProductModeration = () => {
   const [activeTab, setActiveTab] = useState('all') // 'all' or 'pending'
   const [pageAll, setPageAll] = useState(1)
   const [pagePending, setPagePending] = useState(1)
-  const [allProductsState, setAllProductsState] = useState(enrichedProducts)
+  const [allProductsState, setAllProductsState] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [pendingAction, setPendingAction] = useState(null)
   const navigate = useNavigate()
 
   const PAGE_SIZE = 7
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const data = await listProducts({ includeAuth: true })
+        setAllProductsState(
+          (data || []).map((p) => ({
+            ...p,
+            submittedOn: new Date(p.createdAt).toLocaleDateString(),
+          })),
+        )
+      } catch (err) {
+        console.error('Failed to load products for moderation:', err)
+        setError(err.message || 'Failed to load products.')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    load()
+  }, [])
 
   const allProducts = allProductsState
   const pendingProducts = useMemo(
@@ -140,13 +157,15 @@ const ProductModeration = () => {
   const filteredAllProducts = allProducts.filter((item) => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
-    return item.name.toLowerCase().includes(query) || item.seller.toLowerCase().includes(query)
+    const sellerName = (item.seller?.name || '').toLowerCase()
+    return item.name.toLowerCase().includes(query) || sellerName.includes(query)
   })
 
   const filteredPendingProducts = pendingProducts.filter((item) => {
     if (!searchQuery) return true
     const query = searchQuery.toLowerCase()
-    return item.name.toLowerCase().includes(query) || item.seller.toLowerCase().includes(query)
+    const sellerName = (item.seller?.name || '').toLowerCase()
+    return item.name.toLowerCase().includes(query) || sellerName.includes(query)
   })
 
   const totalPagesAll = Math.max(1, Math.ceil(filteredAllProducts.length / PAGE_SIZE))
@@ -171,25 +190,26 @@ const ProductModeration = () => {
     }
   }
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!pendingAction) return
 
     const { action, record } = pendingAction
 
-    setAllProductsState((prev) =>
-      prev.map((product) => {
-        if (product.id !== record.id) return product
-        if (action === 'approve') {
-          return { ...product, status: 'Live' }
-        }
-        if (action === 'reject') {
-          return { ...product, status: 'Rejected' }
-        }
-        return product
-      }),
-    )
-
-    setPendingAction(null)
+    try {
+      const nextStatus = action === 'approve' ? 'Live' : 'Rejected'
+      await updateProductStatusAdmin(record._id, nextStatus)
+      setAllProductsState((prev) =>
+        prev.map((product) => {
+          if (product._id !== record._id) return product
+          return { ...product, status: nextStatus }
+        }),
+      )
+    } catch (err) {
+      console.error('Failed to update product status:', err)
+      setError(err.message || 'Failed to update product status.')
+    } finally {
+      setPendingAction(null)
+    }
   }
 
   const handleCancelAction = () => {
@@ -257,20 +277,31 @@ const ProductModeration = () => {
               inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm"
             />
           </div>
-          <DataTable
-            columns={allProductsColumns((row) => navigate(`/admin/products/${row.id}/view`))}
-            data={paginatedAllProducts}
-          />
-          {filteredAllProducts.length === 0 && (
-            <div className="py-12 text-center">
-              <Package className="mx-auto mb-4 h-12 w-12 text-neutral-300" aria-hidden="true" />
-              <p className="text-sm text-neutral-500">No products found matching your search.</p>
+          {error && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
             </div>
           )}
-          {filteredAllProducts.length > 0 && totalPagesAll > 1 && (
-            <div className="mt-6">
-              <Pagination page={pageAll} totalPages={totalPagesAll} onPageChange={setPageAll} />
-            </div>
+          {loading ? (
+            <div className="py-10 text-center text-sm text-neutral-600">Loading products...</div>
+          ) : (
+            <>
+              <DataTable
+                columns={allProductsColumns((row) => navigate(`/admin/products/${row._id}/view`))}
+                data={paginatedAllProducts}
+              />
+              {filteredAllProducts.length === 0 && (
+                <div className="py-12 text-center">
+                  <Package className="mx-auto mb-4 h-12 w-12 text-neutral-300" aria-hidden="true" />
+                  <p className="text-sm text-neutral-500">No products found matching your search.</p>
+                </div>
+              )}
+              {filteredAllProducts.length > 0 && totalPagesAll > 1 && (
+                <div className="mt-6">
+                  <Pagination page={pageAll} totalPages={totalPagesAll} onPageChange={setPageAll} />
+                </div>
+              )}
+            </>
           )}
         </Card>
       )}
@@ -296,12 +327,19 @@ const ProductModeration = () => {
               inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm"
             />
           </div>
-          {filteredPendingProducts.length > 0 ? (
+          {error && (
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="py-10 text-center text-sm text-neutral-600">Loading pending products...</div>
+          ) : filteredPendingProducts.length > 0 ? (
             <>
               <DataTable
                 columns={createPendingProductsColumns(
                   setPendingAction,
-                  (row) => navigate(`/admin/products/${row.id}/view`),
+                  (row) => navigate(`/admin/products/${row._id}/view`),
                 )}
                 data={paginatedPendingProducts}
               />
@@ -355,13 +393,13 @@ const ProductModeration = () => {
               <p className="flex justify-between gap-4">
                 <span className="text-neutral-500">Seller</span>
                 <span className="font-semibold text-neutral-900">
-                  {pendingAction.record.seller}
+                  {pendingAction.record.seller?.name || '—'}
                 </span>
               </p>
               <p className="mt-1 flex justify-between gap-4">
                 <span className="text-neutral-500">Category</span>
                 <span className="font-semibold text-neutral-900">
-                  {pendingAction.record.category}
+                  {pendingAction.record.category?.name || '—'}
                 </span>
               </p>
               <p className="mt-1 flex justify-between gap-4">

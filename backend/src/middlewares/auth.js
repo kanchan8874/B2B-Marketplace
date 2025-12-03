@@ -14,6 +14,18 @@ export const authenticate = async (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, env.JWT_SECRET)
+
+    // Special handling for static admin user (not stored in DB)
+    if (payload.sub === 'admin' && payload.role === 'admin') {
+      req.user = {
+        id: 'admin',
+        email: env.ADMIN_EMAIL,
+        role: 'admin',
+        name: 'Admin',
+      }
+      return next()
+    }
+
     const user = await User.findById(payload.sub).select('-passwordHash')
     if (!user) {
       return next(new ApiError(StatusCodes.UNAUTHORIZED, 'User not found'))

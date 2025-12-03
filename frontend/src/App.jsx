@@ -13,6 +13,7 @@ import SellerDashboard from './pages/seller/Dashboard.jsx'
 import AdminLogin from './pages/auth/AdminLogin.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
 import AdminProfile from './pages/admin/Profile.jsx'
+import CategoryManagement from './pages/admin/CategoryManagement.jsx'
 import CategoryDirectory from './pages/buyer/CategoryDirectory.jsx'
 import ProductListing from './pages/buyer/ProductListing.jsx'
 import ProductDetails from './pages/buyer/ProductDetails.jsx'
@@ -22,6 +23,7 @@ import BuyerProfile from './pages/buyer/Profile.jsx'
 import BuyerKYCSubmission from './pages/buyer/BuyerKYCSubmission.jsx'
 import ContactSeller from './pages/buyer/ContactSeller.jsx'
 import Messages from './pages/buyer/Messages.jsx'
+import RFQDetail from './pages/buyer/RFQDetail.jsx'
 import SellerProfile from './pages/seller/Profile.jsx'
 import ProductCatalog from './pages/seller/ProductCatalog.jsx'
 import ProductEditor from './pages/seller/ProductEditor.jsx'
@@ -32,6 +34,7 @@ import SellerKYCSubmission from './pages/seller/SellerKYCSubmission.jsx'
 import SellerMessages from './pages/seller/Messages.jsx'
 import UserManagement from './pages/admin/UserManagement.jsx'
 import ProductModeration from './pages/admin/ProductModeration.jsx'
+import KYCOverview from './pages/admin/KYCOverview.jsx'
 import SellerKYCManagement from './pages/admin/SellerKYCManagement.jsx'
 import BuyerKYCManagement from './pages/admin/BuyerKYCManagement.jsx'
 import RFQMonitoring from './pages/admin/RFQMonitoring.jsx'
@@ -120,6 +123,16 @@ const App = () => (
               <ProtectedRoute allowed={['buyer']}>
                 <BuyerLayout>
                   <RFQCenter />
+                </BuyerLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/buyer/rfqs/:rfqId"
+            element={
+              <ProtectedRoute allowed={['buyer']}>
+                <BuyerLayout>
+                  <RFQDetail />
                 </BuyerLayout>
               </ProtectedRoute>
             }
@@ -310,6 +323,16 @@ const App = () => (
             }
           />
           <Route
+            path="/admin/categories"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <CategoryManagement />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/subscriptions"
             element={
               <ProtectedRoute allowed={['admin']}>
@@ -325,6 +348,16 @@ const App = () => (
               <ProtectedRoute allowed={['admin']}>
                 <AdminLayout>
                   <SubscriptionSellers />
+                </AdminLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/kyc"
+            element={
+              <ProtectedRoute allowed={['admin']}>
+                <AdminLayout>
+                  <KYCOverview />
                 </AdminLayout>
               </ProtectedRoute>
             }

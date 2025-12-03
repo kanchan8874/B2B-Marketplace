@@ -1,5 +1,6 @@
 import Joi from 'joi'
 import { StatusCodes } from 'http-status-codes'
+import fs from 'fs'
 import { Product } from '../models/Product.js'
 import { User } from '../models/User.js'
 import { success } from '../utils/ApiResponse.js'
@@ -7,6 +8,7 @@ import { catchAsync } from '../utils/catchAsync.js'
 import { ApiError } from '../utils/ApiError.js'
 import { getProductLimit, canAddProduct, getRemainingSlots, getTierConfig } from '../config/subscriptionTiers.js'
 import { isPriceValidityExpired } from '../services/priceValidityService.js'
+import cloudinary from '../config/cloudinary.js'
 
 export const productValidation = {
   upsert: Joi.object({
@@ -30,11 +32,12 @@ export const productValidation = {
 }
 
 export const listProducts = catchAsync(async (req, res) => {
-  const { category, search, seller } = req.query
+  const { category, search, seller, status } = req.query
 
   const filter = {}
   if (category) filter.category = category
   if (seller) filter.seller = seller
+  if (status && status !== 'All') filter.status = status
   if (search) {
     filter.name = { $regex: search, $options: 'i' }
   }
@@ -68,20 +71,26 @@ export const getProduct = catchAsync(async (req, res) => {
 })
 
 export const createProduct = catchAsync(async (req, res) => {
-  // Check subscription tier limit
+  // Only allow verified sellers (KYC approved) to create products
   if (req.user.role === 'seller') {
     const seller = await User.findById(req.user.id)
     if (!seller) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Seller not found')
     }
 
-    // Count current live/pending products (excluding drafts)
+    if (!seller.isVerified) {
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        'Your KYC is not approved yet. Please complete seller verification before listing products.',
+      )
+    }
+
+    // Check subscription tier limit
     const currentProductCount = await Product.countDocuments({
       seller: req.user.id,
       status: { $in: ['Live', 'Pending'] },
     })
 
-    // Check if seller can add more products
     if (!canAddProduct(currentProductCount, seller.subscriptionTier)) {
       const tierConfig = getTierConfig(seller.subscriptionTier)
       throw new ApiError(
@@ -96,8 +105,32 @@ export const createProduct = catchAsync(async (req, res) => {
     seller: req.user.id,
   }
 
-  if (req.file) {
-    body.images = [req.file.path]
+  // Upload up to 4 images to Cloudinary if provided
+  if (Array.isArray(req.files) && req.files.length > 0) {
+    const imageUrls = []
+    for (const file of req.files) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'b2b-marketplace/products',
+          resource_type: 'image',
+        })
+        imageUrls.push(uploadResult.secure_url)
+      } catch (error) {
+        console.error('[createProduct] Failed to upload image to Cloudinary:', {
+          path: file.path,
+          message: error.message,
+        })
+      } finally {
+        try {
+          fs.unlinkSync(file.path)
+        } catch {
+          // ignore fs errors
+        }
+      }
+    }
+    if (imageUrls.length) {
+      body.images = imageUrls
+    }
   }
 
   const product = await Product.create(body)
@@ -106,12 +139,90 @@ export const createProduct = catchAsync(async (req, res) => {
 
 export const updateProduct = catchAsync(async (req, res) => {
   const update = { ...req.body }
-  if (req.file) {
-    update.$push = { images: req.file.path }
+
+  // If new images are uploaded, push Cloudinary URLs into images array
+  if (Array.isArray(req.files) && req.files.length > 0) {
+    const imageUrls = []
+    for (const file of req.files) {
+      try {
+        const uploadResult = await cloudinary.uploader.upload(file.path, {
+          folder: 'b2b-marketplace/products',
+          resource_type: 'image',
+        })
+        imageUrls.push(uploadResult.secure_url)
+      } catch (error) {
+        console.error('[updateProduct] Failed to upload image to Cloudinary:', {
+          path: file.path,
+          message: error.message,
+        })
+      } finally {
+        try {
+          fs.unlinkSync(file.path)
+        } catch {
+          // ignore
+        }
+      }
+    }
+    if (imageUrls.length) {
+      update.$push = { images: { $each: imageUrls } }
+    }
   }
 
-  const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true })
+  let product = await Product.findByIdAndUpdate(req.params.id, update, { new: true })
+
+  // Auto-correct status based on price validity:
+  // If product was moved to "To Be Offered" because validity expired,
+  // and now validity is in future, bring it back to "Live".
+  if (product && product.status === 'To Be Offered' && !isPriceValidityExpired(product)) {
+    product.status = 'Live'
+    await product.save()
+  }
+
   return res.status(StatusCodes.OK).json(success(product, 'Product updated'))
 })
+
+export const deleteProduct = catchAsync(async (req, res) => {
+  const filter = { _id: req.params.id }
+
+  // Sellers can only delete their own products; admins can delete any
+  if (req.user.role === 'seller') {
+    filter.seller = req.user.id
+  }
+
+  const product = await Product.findOneAndDelete(filter)
+
+  if (!product) {
+    return res.status(StatusCodes.NOT_FOUND).json(success(null, 'Product not found'))
+  }
+
+  // (Optional) We are not deleting images from Cloudinary here to keep MVP simple
+  return res.status(StatusCodes.OK).json(success(null, 'Product deleted'))
+})
+
+export const adminUpdateProductStatus = catchAsync(async (req, res) => {
+  if (req.user.role !== 'admin') {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Only admins can update product status')
+  }
+
+  const { status } = req.body
+  const allowedStatuses = ['Draft', 'Pending', 'Live', 'Rejected', 'To Be Offered']
+
+  if (!status || !allowedStatuses.includes(status)) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, 'Invalid product status')
+  }
+
+  const product = await Product.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    { new: true },
+  ).populate('category seller', 'name')
+
+  if (!product) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found')
+  }
+
+  return res.status(StatusCodes.OK).json(success(product, 'Product status updated'))
+})
+
 
 

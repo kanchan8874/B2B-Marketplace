@@ -7,7 +7,7 @@ import FormField from '../../components/common/FormField.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
 import { required, minLength, characterLimit } from '../../utils/validators.js'
 import { sendMessage } from '../../services/messageService.js'
-import { products } from '../../mocks/products.js'
+import { getProductById } from '../../services/productService.js'
 
 const initialValues = {
   subject: '',
@@ -26,12 +26,41 @@ const ContactSeller = () => {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [sellerId, setSellerId] = useState(null)
+  const [product, setProduct] = useState(null)
+  const [loading, setLoading] = useState(!!productId)
+  const [error, setError] = useState('')
 
-  const product = useMemo(() => {
-    if (productId) {
-      return products.find((p) => p.id === productId)
+  useEffect(() => {
+    if (!productId) {
+      setLoading(false)
+      return
     }
-    return null
+
+    let isMounted = true
+    const loadProduct = async () => {
+      setLoading(true)
+      setError('')
+      try {
+        const data = await getProductById(productId)
+        if (!isMounted) return
+        setProduct(data)
+        if (data?.seller?._id) {
+          setSellerId(data.seller._id)
+        }
+      } catch (err) {
+        console.error('Failed to load product for contact seller:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load product details.')
+        }
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    loadProduct()
+    return () => {
+      isMounted = false
+    }
   }, [productId])
 
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
@@ -46,12 +75,6 @@ const ContactSeller = () => {
       const subject = `Inquiry about ${product.name}`
       handleChange({ target: { name: 'subject', value: subject } })
     }
-    // For mock data, we'll use a placeholder sellerId
-    // In real app, this would come from the product's seller field
-    if (product && !sellerId) {
-      // Mock sellerId - in real app, this would be product.sellerId
-      setSellerId('seller-1') // Placeholder
-    }
   }, [product])
 
   const handleSubmit = async (event) => {
@@ -60,7 +83,7 @@ const ContactSeller = () => {
 
     try {
       setSubmitting(true)
-      await sendMessage(sellerId, productId || undefined, values.subject, values.body)
+      await sendMessage(sellerId, product?._id || undefined, values.subject, values.body)
       setSubmitted(true)
       resetForm()
     } catch (error) {
@@ -117,9 +140,21 @@ const ContactSeller = () => {
 
       <Card
         title="Contact Seller"
-        subtitle={product ? `Send a message to the seller about ${product.name}` : 'Send a message to the seller'}
+        subtitle={
+          product
+            ? `Send a message to the seller about ${product.name}`
+            : 'Send a message to the seller'
+        }
         className="border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
       >
+        {loading && (
+          <div className="mb-4 text-sm text-neutral-600">Loading product details...</div>
+        )}
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
         {product && (
           <div className="mb-6 rounded-2xl border border-blue-100 bg-white/80 p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Product</p>

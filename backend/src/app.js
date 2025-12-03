@@ -17,6 +17,9 @@ const __dirname = path.dirname(__filename)
 
 const app = express()
 
+// Disable ETag / HTTP caching for API responses to simplify client data handling
+app.set('etag', false)
+
 // Security & CORS
 app.use(helmet())
 app.use(
@@ -31,15 +34,23 @@ if (env.NODE_ENV !== 'test') {
   app.use(morgan('dev'))
 }
 
-// Rate limiting (basic global)
+// Rate limiting (basic global) – disabled for now for local/dev
+// If you want to re‑enable in future, set an appropriate max and remove the skip callback.
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => true, // always skip → effectively no rate limit
 })
 
 app.use('/api', apiLimiter)
+
+// Disable caching for API responses (always return fresh JSON)
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  next()
+})
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }))

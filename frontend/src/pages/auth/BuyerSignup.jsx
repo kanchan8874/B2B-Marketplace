@@ -1,12 +1,18 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import useFormValidation from '../../hooks/useFormValidation.js'
-import { gst, minLength, mobile, optionalCharacterLimit, required, email as emailRule } from '../../utils/validators.js'
+import { useAuth } from '../../hooks/useAuth.js'
+import { signup } from '../../services/authService.js'
+import { gst, minLength, mobile, optionalCharacterLimit, required, email as emailRule, password as passwordRule } from '../../utils/validators.js'
+import { Eye, EyeOff, Lock } from 'lucide-react'
 
 const initialValues = {
   buyerName: '',
   contactName: '',
   email: '',
+  password: '',
   phone: '',
   gst: '',
 }
@@ -15,6 +21,7 @@ const validationSchema = {
   buyerName: [required('Business name'), minLength('Business name', 3), optionalCharacterLimit('Business name', 80)],
   contactName: [required('Contact person name'), minLength('Contact person name', 2)],
   email: [emailRule('Work email')],
+  password: [passwordRule('Password')],
   phone: [mobile('Mobile number')],
   gst: [gst('GST number')],
 }
@@ -28,11 +35,54 @@ const BuyerSignup = () => {
     validationSchema,
     { validateOnChange: false },
   )
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const { setUser } = useAuth()
+  const navigate = useNavigate()
 
-  const onSubmit = (event) => {
+  const onSubmit = async (event) => {
     event.preventDefault()
+    setSubmitError('')
+    
     if (!validateForm()) return
-    resetForm()
+
+    setSubmitting(true)
+    try {
+      // Prepare signup data
+      const signupData = {
+        name: values.contactName, // Use contact person name as user name
+        email: values.email,
+        password: values.password, // Use actual password from form
+        role: 'buyer',
+        companyName: values.buyerName,
+        phone: values.phone,
+        gstNumber: values.gst || undefined,
+        location: {
+          city: '',
+          state: '',
+          country: 'India',
+        },
+      }
+
+      const response = await signup(signupData)
+      
+      // Update user context immediately
+      if (response.data?.user) {
+        setUser(response.data.user)
+        // Small delay to ensure state is updated before navigation
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+
+      // Redirect to buyer dashboard
+      navigate('/buyer/dashboard', { replace: true })
+      resetForm()
+    } catch (error) {
+      console.error('Signup error:', error)
+      setSubmitError(error.message || 'Signup failed. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -89,6 +139,22 @@ const BuyerSignup = () => {
                   wrapperClassName="space-y-2"
                 />
                 <FormField
+                  id="password"
+                  name="password"
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  icon={Lock}
+                  rightIcon={showPassword ? EyeOff : Eye}
+                  onRightIconClick={() => setShowPassword(!showPassword)}
+                  value={values.password}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder="Create a strong password"
+                  error={errors.password}
+                  wrapperClassName="space-y-2"
+                />
+                <FormField
                   id="phone"
                   name="phone"
                   label="Mobile (OTP login)"
@@ -112,8 +178,13 @@ const BuyerSignup = () => {
                   error={errors.gst}
                   wrapperClassName="space-y-2"
                 />
-                <Button type="submit" size="md" className="w-full mt-2">
-                  Create buyer account
+                {submitError && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                    {submitError}
+                  </div>
+                )}
+                <Button type="submit" size="md" className="w-full mt-2" disabled={submitting}>
+                  {submitting ? 'Creating account...' : 'Create buyer account'}
                 </Button>
               </form>
             </div>

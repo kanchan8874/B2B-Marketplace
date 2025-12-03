@@ -13,9 +13,16 @@ const ProductListTable = ({ items, onView, onEdit, onDelete }) => {
           {/* Circular thumbnail */}
           <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
             <img
-              src={row.gallery?.[0] || 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'}
+              src={
+                row.images?.[0] ||
+                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
+              }
               alt={row.name}
               className="h-full w-full object-cover"
+              onError={(e) => {
+                e.target.src =
+                  'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
+              }}
             />
           </div>
           <div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Eye } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
@@ -6,8 +6,7 @@ import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
-import { rfqs } from '../../mocks/rfqs.js'
-import { products } from '../../mocks/products.js'
+import { listRFQs } from '../../services/rfqService.js'
 
 const ITEMS_PER_PAGE = 5
 
@@ -16,34 +15,55 @@ const RFQInbox = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [page, setPage] = useState(1)
+  const [rfqs, setRfqs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const productImageMap = useMemo(
-    () =>
-      products.reduce((acc, product) => {
-        acc[product.name] =
-          product.gallery?.[0] ||
-          'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
-        return acc
-      }, {}),
-    [],
-  )
+  useEffect(() => {
+    let isMounted = true
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const data = await listRFQs()
+        if (!isMounted) return
+        setRfqs(data || [])
+      } catch (err) {
+        console.error('Failed to load RFQs:', err)
+        if (isMounted) setError(err.message || 'Failed to load RFQs.')
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+    load()
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filteredRFQs = useMemo(() => {
-    const base = rfqs
-    const byStatus =
-      statusFilter === 'All' ? base : base.filter((rfq) => rfq.status === statusFilter)
+    let base = rfqs
+    if (statusFilter !== 'All') {
+      base = base.filter((rfq) => rfq.status === statusFilter)
+    }
 
-    if (!searchQuery) return byStatus
+    if (!searchQuery) return base
     const query = searchQuery.toLowerCase()
-    return byStatus.filter(
-      (rfq) =>
-        rfq.productName.toLowerCase().includes(query) ||
-        rfq.buyer?.toLowerCase().includes(query) ||
-        rfq.location?.toLowerCase().includes(query),
-    )
-  }, [searchQuery, statusFilter])
+    return base.filter((rfq) => {
+      const productName = rfq.product?.name || ''
+      const buyerName = rfq.buyer?.name || rfq.buyer?.companyName || ''
+      const location = [rfq.deliveryLocation?.city, rfq.deliveryLocation?.state]
+        .filter(Boolean)
+        .join(', ')
+      return (
+        productName.toLowerCase().includes(query) ||
+        buyerName.toLowerCase().includes(query) ||
+        location.toLowerCase().includes(query)
+      )
+    })
+  }, [rfqs, searchQuery, statusFilter])
 
-  const totalPages = Math.ceil(filteredRFQs.length / ITEMS_PER_PAGE)
+  const totalPages = Math.max(1, Math.ceil(filteredRFQs.length / ITEMS_PER_PAGE))
   const startIndex = (page - 1) * ITEMS_PER_PAGE
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedRFQs = filteredRFQs.slice(startIndex, endIndex)
@@ -132,16 +152,29 @@ const RFQInbox = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {paginatedRFQs.length === 0 ? (
+              {error && !loading && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-sm text-neutral-500">
+                  <td colSpan={8} className="px-4 py-3 text-center text-sm text-red-800">
+                    {error}
+                  </td>
+                </tr>
+              )}
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-neutral-500">
+                    Loading RFQs...
+                  </td>
+                </tr>
+              ) : paginatedRFQs.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-sm text-neutral-500">
                     No RFQs received yet. When buyers send RFQs for your products, they will appear here.
                   </td>
                 </tr>
               ) : (
                 paginatedRFQs.map((rfq) => (
                   <tr
-                    key={rfq.id}
+                    key={rfq._id}
                     className="group bg-white/90 transition-colors hover:bg-emerald-50/60"
                   >
                     <td className="px-4 py-4">
@@ -149,24 +182,34 @@ const RFQInbox = () => {
                         <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
                           <img
                             src={
-                              productImageMap[rfq.productName] ||
+                              rfq.product?.images?.[0] ||
                               'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
                             }
-                            alt={rfq.productName}
+                            alt={rfq.product?.name || 'Product'}
                             className="h-full w-full object-cover"
                           />
                         </div>
-                        <p className="font-semibold text-neutral-900">{rfq.productName}</p>
+                        <p className="font-semibold text-neutral-900">
+                          {rfq.product?.name || 'Product'}
+                        </p>
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-neutral-800">{rfq.buyer}</p>
+                      <p className="text-neutral-800">
+                        {rfq.buyer?.name || rfq.buyer?.companyName || 'Buyer'}
+                      </p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="font-medium text-neutral-800">{rfq.quantity.toLocaleString()}</p>
+                      <p className="font-medium text-neutral-800">
+                        {rfq.quantity?.toLocaleString?.() ?? '-'}
+                      </p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-neutral-800">{rfq.location}</p>
+                      <p className="text-neutral-800">
+                        {[rfq.deliveryLocation?.city, rfq.deliveryLocation?.state]
+                          .filter(Boolean)
+                          .join(', ') || '—'}
+                      </p>
                     </td>
                     <td className="px-4 py-4">
                       <StatusTag tone={getStatusTone(rfq.status)}>{rfq.status}</StatusTag>
@@ -179,14 +222,16 @@ const RFQInbox = () => {
                       </p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="text-neutral-700">{rfq.createdOn}</p>
+                      <p className="text-neutral-700">
+                        {rfq.createdAt ? new Date(rfq.createdAt).toLocaleDateString() : '—'}
+                      </p>
                     </td>
                     <td className="px-4 py-4">
                       <Button
                         size="sm"
                         variant="outline"
                         className="h-8 gap-1.5 rounded-full border border-neutral-200 bg-white/90 px-3 text-xs font-semibold text-neutral-800 shadow-[0_1px_4px_rgba(15,23,42,0.08)] hover:border-brand-primary/70 hover:text-brand-primary hover:bg-brand-primary/5 focus-visible:ring-2 focus-visible:ring-brand-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50"
-                        onClick={() => navigate(`/seller/rfqs/${rfq.id}/respond`)}
+                        onClick={() => navigate(`/seller/rfqs/${rfq._id}/respond`)}
                       >
                         <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                         View/Respond

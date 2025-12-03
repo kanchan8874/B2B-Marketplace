@@ -7,6 +7,8 @@ import { ApiError } from '../utils/ApiError.js'
 import { success } from '../utils/ApiResponse.js'
 import { catchAsync } from '../utils/catchAsync.js'
 import { sendKYCStatusEmail, shouldSendEmailForUser } from '../services/emailService.js'
+import cloudinary from '../config/cloudinary.js'
+import fs from 'fs'
 
 // Seller KYC Validation
 export const sellerKYCValidation = {
@@ -99,17 +101,42 @@ export const submitSellerKYC = catchAsync(async (req, res) => {
     businessType,
   } = req.body
 
-  // Handle file uploads
+  // Handle file uploads – upload to Cloudinary and remove local temp files
+  const uploadDoc = async (file, folder) => {
+    const resourceType = file.mimetype && file.mimetype.startsWith('image/') ? 'image' : 'raw'
+    try {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder,
+        resource_type: resourceType,
+      })
+      return result.secure_url
+    } finally {
+      try {
+        fs.unlinkSync(file.path)
+      } catch {
+        // ignore fs errors
+      }
+    }
+  }
+
   const documents = {}
   if (req.files) {
     if (req.files.certificateOfIncorporation) {
-      documents.certificateOfIncorporation = req.files.certificateOfIncorporation[0].path
+      documents.certificateOfIncorporation = await uploadDoc(
+        req.files.certificateOfIncorporation[0],
+        'b2b-marketplace/kyc/seller',
+      )
     }
     if (req.files.gstCertificate) {
-      documents.gstCertificate = req.files.gstCertificate[0].path
+      documents.gstCertificate = await uploadDoc(
+        req.files.gstCertificate[0],
+        'b2b-marketplace/kyc/seller',
+      )
     }
     if (req.files.otherDocuments) {
-      documents.otherDocuments = req.files.otherDocuments.map((file) => file.path)
+      documents.otherDocuments = await Promise.all(
+        req.files.otherDocuments.map((file) => uploadDoc(file, 'b2b-marketplace/kyc/seller')),
+      )
     }
   }
 
@@ -329,17 +356,42 @@ export const submitBuyerKYC = catchAsync(async (req, res) => {
     state,
   } = req.body
 
-  // Handle file uploads (optional for buyers)
+  // Handle file uploads (optional for buyers) – upload to Cloudinary
+  const uploadDoc = async (file, folder) => {
+    const resourceType = file.mimetype && file.mimetype.startsWith('image/') ? 'image' : 'raw'
+    try {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder,
+        resource_type: resourceType,
+      })
+      return result.secure_url
+    } finally {
+      try {
+        fs.unlinkSync(file.path)
+      } catch {
+        // ignore fs errors
+      }
+    }
+  }
+
   const documents = {}
   if (req.files) {
     if (req.files.businessRegistration) {
-      documents.businessRegistration = req.files.businessRegistration[0].path
+      documents.businessRegistration = await uploadDoc(
+        req.files.businessRegistration[0],
+        'b2b-marketplace/kyc/buyer',
+      )
     }
     if (req.files.gstCertificate) {
-      documents.gstCertificate = req.files.gstCertificate[0].path
+      documents.gstCertificate = await uploadDoc(
+        req.files.gstCertificate[0],
+        'b2b-marketplace/kyc/buyer',
+      )
     }
     if (req.files.otherDocuments) {
-      documents.otherDocuments = req.files.otherDocuments.map((file) => file.path)
+      documents.otherDocuments = await Promise.all(
+        req.files.otherDocuments.map((file) => uploadDoc(file, 'b2b-marketplace/kyc/buyer')),
+      )
     }
   }
 

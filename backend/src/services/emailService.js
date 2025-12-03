@@ -35,14 +35,33 @@ export const sendEmail = async ({ to, subject, html, text }) => {
   }
 
   const mailOptions = {
-    from: env.EMAIL_FROM,
+    from: `"B2B Marketplace" <${env.EMAIL_FROM}>`,
     to,
     subject,
     text: text || '',
     html: html || text || '',
+    // Add headers to improve deliverability
+    headers: {
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'high',
+    },
   }
 
-  await tx.sendMail(mailOptions)
+  try {
+    const info = await tx.sendMail(mailOptions)
+    console.log('[emailService] Email sent successfully:', { to, subject, messageId: info.messageId })
+    return info
+  } catch (error) {
+    console.error('[emailService] Failed to send email:', {
+      to,
+      subject,
+      error: error.message,
+      code: error.code,
+      response: error.response,
+    })
+    throw error
+  }
 }
 
 export const sendKYCStatusEmail = async ({ to, name, role, status, reason }) => {

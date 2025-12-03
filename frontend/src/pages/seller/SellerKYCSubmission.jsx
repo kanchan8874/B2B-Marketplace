@@ -119,7 +119,6 @@ const SellerKYCSubmission = () => {
 
       const response = await submitSellerKYC(formData)
       setKycStatus(response.data)
-      alert('KYC submitted successfully! Admin will review your submission.')
     } catch (error) {
       alert(error.message || 'Failed to submit KYC. Please try again.')
     } finally {

@@ -4,6 +4,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
 import { useAuth } from '../../hooks/useAuth.js'
+import { adminLogin } from '../../services/authService.js'
 import useFormValidation from '../../hooks/useFormValidation.js'
 import { email as emailRule, password as passwordRule } from '../../utils/validators.js'
 
@@ -20,18 +21,35 @@ const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const { setUser } = useAuth()
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const { values, errors, handleChange, handleBlur, validateForm, resetForm } = useFormValidation(
     initialValues,
     validationSchema,
     { validateOnChange: false },
   )
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
+    setSubmitError('')
     if (!validateForm()) return
-    setUser?.({ name: values.email, role: 'admin' })
-    resetForm()
-    navigate('/admin/dashboard')
+
+    setSubmitting(true)
+    try {
+      const response = await adminLogin(values.email, values.password)
+      if (response.data?.user && setUser) {
+        setTimeout(() => {
+          setUser(response.data.user)
+          navigate('/admin/dashboard', { replace: true })
+        }, 100)
+      }
+      resetForm()
+    } catch (error) {
+      console.error('Admin login error:', error)
+      setSubmitError(error.message || 'Invalid admin credentials.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -82,6 +100,12 @@ const AdminLogin = () => {
                   wrapperClassName="space-y-2"
                 />
 
+                {submitError && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                    {submitError}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-2">
                   <label className="flex items-center gap-2.5 cursor-pointer group">
                     <input
@@ -98,8 +122,8 @@ const AdminLogin = () => {
                   </a>
                 </div>
 
-                <Button type="submit" size="md" className="w-full mt-2">
-                  Enter admin panel
+                <Button type="submit" size="md" className="w-full mt-2" disabled={submitting}>
+                  {submitting ? 'Signing in...' : 'Enter admin panel'}
                 </Button>
               </form>
             </div>

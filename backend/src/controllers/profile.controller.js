@@ -8,6 +8,7 @@ export const profileValidation = {
   updateMe: Joi.object({
     body: Joi.object({
       name: Joi.string().optional(),
+      phone: Joi.string().allow('', null),
       companyName: Joi.string().allow('', null),
       location: Joi.object({
         city: Joi.string().allow('', null),
