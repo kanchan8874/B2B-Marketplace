@@ -67,9 +67,7 @@ const RFQResponse = () => {
     )
   }
 
-  const mainImage =
-    product?.images?.[0] ||
-    'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
+  const mainImage = product?.images?.[0] || null
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
@@ -117,7 +115,23 @@ const RFQResponse = () => {
 
           {/* Large product image on the right */}
           <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-neutral-100">
-            <img src={mainImage} alt={rfq.productName} className="h-full w-full object-cover" />
+            {mainImage ? (
+              <img
+                src={mainImage}
+                alt={product?.name || 'Product'}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  // Hide broken images to avoid showing broken icon
+                  e.target.style.display = 'none'
+                }}
+              />
+            ) : (
+              <div className="flex h-full min-h-[260px] w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50 px-6 text-center">
+                <p className="text-sm font-semibold text-neutral-700">
+                  {product?.name || 'Product image not available'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </Card>

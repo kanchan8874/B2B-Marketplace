@@ -43,7 +43,32 @@ export const listRFQs = catchAsync(async (req, res) => {
     .populate('buyer', 'name companyName')
     .sort('-createdAt')
 
-  return res.status(StatusCodes.OK).json(success(rfqs))
+  // Attach latest quoted price (if any) from RFQResponse so seller inbox can show "Last quoted price"
+  const rfqIds = rfqs.map((rfq) => rfq.id)
+
+  let enriched = rfqs
+
+  if (rfqIds.length > 0) {
+    const responses = await RFQResponse.find({ rfq: { $in: rfqIds } })
+      .select('rfq finalPrice createdAt')
+      .sort('createdAt') // ascending so later responses overwrite earlier ones
+
+    const lastPriceByRFQ = {}
+    responses.forEach((resp) => {
+      lastPriceByRFQ[resp.rfq.toString()] = resp.finalPrice
+    })
+
+    enriched = rfqs.map((rfq) => {
+      const obj = rfq.toObject ? rfq.toObject() : rfq
+      const lastQuotedPrice = lastPriceByRFQ[rfq.id] ?? null
+      return {
+        ...obj,
+        lastQuotedPrice,
+      }
+    })
+  }
+
+  return res.status(StatusCodes.OK).json(success(enriched))
 })
 
 export const createRFQ = catchAsync(async (req, res) => {
