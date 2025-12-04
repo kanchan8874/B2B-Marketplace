@@ -1,59 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Crown, Package, AlertCircle, Users } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
 import Modal from '../../components/common/Modal.jsx'
-
-// Mock data – in real app this will come from subscription + product APIs
-const SUBSCRIPTION_CONFIG = {
-  Silver: { limit: 5 },
-  Gold: { limit: 20 },
-  Platinum: { limit: 100 },
-}
-
-const sellersBySubscription = [
-  {
-    id: 's1',
-    name: 'Nova Foods',
-    email: 'karan@novafoods.com',
-    city: 'Pune',
-    state: 'Maharashtra',
-    tier: 'Gold',
-    productsUsed: 14,
-    status: 'Active',
-  },
-  {
-    id: 's2',
-    name: 'Guardian Health',
-    email: 'contact@guardianhealth.in',
-    city: 'Pune',
-    state: 'Maharashtra',
-    tier: 'Platinum',
-    productsUsed: 22,
-    status: 'Active',
-  },
-  {
-    id: 's3',
-    name: 'PackAge Labs',
-    email: 'sales@packagelabs.in',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    tier: 'Silver',
-    productsUsed: 4,
-    status: 'Active',
-  },
-  {
-    id: 's4',
-    name: 'Saffron Harvest Co.',
-    email: 'info@saffronharvest.com',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    tier: 'Silver',
-    productsUsed: 5,
-    status: 'Limit reached',
-  },
-]
+import { listAdminUsers, updateSellerSubscriptionTier } from '../../services/adminService.js'
+import { listProducts } from '../../services/productService.js'
 
 const tierColors = {
   Silver: 'bg-neutral-100 text-neutral-700 border-neutral-300',
@@ -99,36 +51,114 @@ const SubscriptionKPI = ({ icon: Icon, label, value, helper, tone }) => {
   )
 }
 
+// Frontend subscription defaults – keep in sync with backend SUBSCRIPTION_TIERS
+const DEFAULT_PLAN_CONFIG = {
+  Silver: { limit: 10 },
+  Gold: { limit: 50 },
+  Platinum: { limit: 200 },
+}
+
 const SubscriptionManagement = () => {
-  const [planConfig, setPlanConfig] = useState(SUBSCRIPTION_CONFIG)
+  const [planConfig, setPlanConfig] = useState(DEFAULT_PLAN_CONFIG)
   const [searchParams] = useSearchParams()
-  const initialSellerId = searchParams.get('sellerId') || sellersBySubscription[0]?.id
-  const initialSeller = sellersBySubscription.find((s) => s.id === initialSellerId) || sellersBySubscription[0]
-  const [selectedSellerId, setSelectedSellerId] = useState(initialSeller?.id)
-  const [draftTier, setDraftTier] = useState(initialSeller?.tier || 'Silver')
+  const [sellers, setSellers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [selectedSellerId, setSelectedSellerId] = useState(null)
+  const [draftTier, setDraftTier] = useState('Silver')
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false)
+   const [isSaving, setIsSaving] = useState(false)
+   const [saveError, setSaveError] = useState('')
+   const [saveSuccess, setSaveSuccess] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+
+        // 1) Load all sellers
+        const sellerUsers = await listAdminUsers({ role: 'seller' })
+
+        // 2) For each seller, count their active products
+        const sellersWithUsage = await Promise.all(
+          (sellerUsers || []).map(async (u) => {
+            const products = await listProducts({
+              includeAuth: true,
+              seller: u._id,
+              status: 'Live',
+            })
+            const productsUsed = products.length
+            const tier = u.subscriptionTier || 'Silver'
+            const limit = planConfig[tier]?.limit ?? 0
+
+            return {
+              id: u._id,
+              name: u.name || u.companyName || u.email,
+              email: u.email,
+              city: u.location?.city || '',
+              state: u.location?.state || '',
+              tier,
+              productsUsed,
+              status: productsUsed >= limit ? 'Limit reached' : 'Active',
+              raw: u,
+            }
+          }),
+        )
+
+        if (!isMounted) return
+
+        setSellers(sellersWithUsage)
+
+        // Set initial selection from query or first seller
+        const initialSellerId = searchParams.get('sellerId') || sellersWithUsage[0]?.id
+        const initialSeller = sellersWithUsage.find((s) => s.id === initialSellerId) || sellersWithUsage[0]
+        setSelectedSellerId(initialSeller?.id || null)
+        setDraftTier(initialSeller?.tier || 'Silver')
+      } catch (err) {
+        console.error('Failed to load subscription data:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load subscriptions.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [searchParams])
 
   const stats = useMemo(() => {
     const counts = { Silver: 0, Gold: 0, Platinum: 0 }
     let nearLimit = 0
     let atLimit = 0
 
-    sellersBySubscription.forEach((seller) => {
+    sellers.forEach((seller) => {
+      if (!seller.tier) return
       counts[seller.tier] += 1
-      const limit = planConfig[seller.tier].limit
+      const limit = planConfig[seller.tier]?.limit ?? 0
+      if (!limit) return
       const usage = seller.productsUsed / limit
       if (usage >= 1) atLimit += 1
       else if (usage >= 0.8) nearLimit += 1
     })
 
     return { counts, nearLimit, atLimit }
-  }, [planConfig])
+  }, [planConfig, sellers])
 
-  const selectedSeller = sellersBySubscription.find((s) => s.id === selectedSellerId)
-  const selectedLimit = selectedSeller ? planConfig[selectedSeller.tier].limit : 0
+  const selectedSeller = sellers.find((s) => s.id === selectedSellerId)
+  const selectedLimit = selectedSeller ? planConfig[selectedSeller.tier]?.limit ?? 0 : 0
 
   const handleSelectSeller = (sellerId) => {
-    const seller = sellersBySubscription.find((s) => s.id === sellerId)
+    const seller = sellers.find((s) => s.id === sellerId)
     setSelectedSellerId(sellerId)
     setDraftTier(seller?.tier || 'Silver')
   }
@@ -140,6 +170,38 @@ const SubscriptionManagement = () => {
       ...prev,
       [tier]: { ...prev[tier], limit: parsed },
     }))
+  }
+
+  const handleSaveSubscription = async () => {
+    if (!selectedSeller) return
+    if (draftTier === selectedSeller.tier) return
+
+    try {
+      setIsSaving(true)
+      setSaveError('')
+      setSaveSuccess('')
+
+      await updateSellerSubscriptionTier(selectedSeller.id, draftTier)
+
+      // Update local state to reflect new tier
+      setSellers((prev) =>
+        prev.map((s) =>
+          s.id === selectedSeller.id
+            ? {
+                ...s,
+                tier: draftTier,
+              }
+            : s,
+        ),
+      )
+
+      setSaveSuccess('Subscription updated successfully.')
+    } catch (err) {
+      console.error('[SubscriptionManagement] Failed to update subscription tier', err)
+      setSaveError(err.message || 'Failed to update subscription. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -206,10 +268,7 @@ const SubscriptionManagement = () => {
         {/* Sellers list */}
         <Card
           title="Sellers by subscription tier"
-          subtitle={`Showing latest ${Math.min(
-            5,
-            sellersBySubscription.length,
-          )} of ${sellersBySubscription.length} sellers. Open the full list for complete cohort details.`}
+          subtitle={`Showing latest ${Math.min(5, sellers.length)} of ${sellers.length} sellers. Open the full list for complete cohort details.`}
         >
           <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-neutral-50/60">
             <div className="grid grid-cols-[1.4fr,1.2fr,1.2fr,1.1fr,auto] border-b border-neutral-200 bg-neutral-100/60 px-4 py-2 text-xs font-semibold text-neutral-700">
@@ -220,64 +279,71 @@ const SubscriptionManagement = () => {
               <span className="text-right">Status</span>
             </div>
             <div className="divide-y divide-neutral-200 bg-white">
-              {sellersBySubscription.slice(0, 5).map((seller) => {
-                const limit = planConfig[seller.tier].limit
-                const remaining = Math.max(0, limit - seller.productsUsed)
-                const usagePct = Math.min(100, Math.round((seller.productsUsed / limit) * 100))
-                const isSelected = seller.id === selectedSellerId
+              {loading ? (
+                <div className="py-8 text-center text-sm text-neutral-600">Loading sellers...</div>
+              ) : sellers.length === 0 ? (
+                <div className="py-8 text-center text-sm text-neutral-600">No sellers found.</div>
+              ) : (
+                sellers.slice(0, 5).map((seller) => {
+                  const limit =
+                    planConfig[seller.tier]?.limit ?? SUBSCRIPTION_TIERS[seller.tier]?.productLimit ?? 0
+                  const remaining = Math.max(0, limit - seller.productsUsed)
+                  const usagePct = limit ? Math.min(100, Math.round((seller.productsUsed / limit) * 100)) : 0
+                  const isSelected = seller.id === selectedSellerId
 
-                return (
-                  <button
-                    type="button"
-                    key={seller.id}
-                    onClick={() => handleSelectSeller(seller.id)}
-                    className={`grid w-full grid-cols-[1.4fr,1.2fr,1.2fr,1.1fr,auto] items-center px-4 py-3 text-left text-xs transition-colors ${
-                      isSelected ? 'bg-blue-50/80' : 'hover:bg-neutral-50'
-                    }`}
-                  >
-                    <div>
-                      <p className="font-medium text-neutral-900">{seller.name}</p>
-                      <p className="text-[11px] text-neutral-600">
-                        {seller.city}, {seller.state}
-                      </p>
-                    </div>
-                    <div>
-                      <span
-                        className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${tierColors[seller.tier]}`}
-                      >
-                        {seller.tier}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-800">
-                        {seller.productsUsed} / {limit}
-                      </p>
-                      <div className="mt-1 h-1.5 w-full rounded-full bg-neutral-200">
-                        <div
-                          className={`h-full rounded-full ${
-                            usagePct >= 100 ? 'bg-red-500' : usagePct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
-                          }`}
-                          style={{ width: `${usagePct}%` }}
-                        />
+                  return (
+                    <button
+                      type="button"
+                      key={seller.id}
+                      onClick={() => handleSelectSeller(seller.id)}
+                      className={`grid w-full grid-cols-[1.4fr,1.2fr,1.2fr,1.1fr,auto] items-center px-4 py-3 text-left text-xs transition-colors ${
+                        isSelected ? 'bg-blue-50/80' : 'hover:bg-neutral-50'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-medium text-neutral-900">{seller.name}</p>
+                        <p className="text-[11px] text-neutral-600">
+                          {seller.city}, {seller.state}
+                        </p>
                       </div>
-                    </div>
-                    <div>
-                      <p
-                        className={`text-xs font-medium ${
-                          remaining === 0 ? 'text-red-600' : remaining <= 2 ? 'text-amber-600' : 'text-emerald-700'
-                        }`}
-                      >
-                        {remaining} slots left
-                      </p>
-                    </div>
-                    <div className="flex justify-end">
-                      <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-600">
-                        {seller.status}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
+                      <div>
+                        <span
+                          className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${tierColors[seller.tier]}`}
+                        >
+                          {seller.tier}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-800">
+                          {seller.productsUsed} / {limit}
+                        </p>
+                        <div className="mt-1 h-1.5 w-full rounded-full bg-neutral-200">
+                          <div
+                            className={`h-full rounded-full ${
+                              usagePct >= 100 ? 'bg-red-500' : usagePct >= 80 ? 'bg-amber-500' : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${usagePct}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <p
+                          className={`text-xs font-medium ${
+                            remaining === 0 ? 'text-red-600' : remaining <= 2 ? 'text-amber-600' : 'text-emerald-700'
+                          }`}
+                        >
+                          {remaining} slots left
+                        </p>
+                      </div>
+                      <div className="flex justify-end">
+                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-600">
+                          {seller.status}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })
+              )}
             </div>
           </div>
           <div className="mt-4 text-center">
@@ -348,12 +414,34 @@ const SubscriptionManagement = () => {
                 </p>
               </div>
 
+              {(saveError || saveSuccess) && (
+                <div className="text-xs">
+                  {saveError && <p className="text-red-600">{saveError}</p>}
+                  {saveSuccess && <p className="text-emerald-700">{saveSuccess}</p>}
+                </div>
+              )}
+
               <div className="flex justify-end gap-3">
-                <Button variant="ghost" size="sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  type="button"
+                  onClick={() => {
+                    setDraftTier(selectedSeller.tier)
+                    setSaveError('')
+                    setSaveSuccess('')
+                  }}
+                >
                   Cancel
                 </Button>
-                <Button variant="primary" size="sm">
-                  Save changes
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="button"
+                  onClick={handleSaveSubscription}
+                  disabled={isSaving || draftTier === selectedSeller.tier}
+                >
+                  {isSaving ? 'Saving…' : 'Save changes'}
                 </Button>
               </div>
             </div>

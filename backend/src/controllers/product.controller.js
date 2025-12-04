@@ -105,7 +105,7 @@ export const createProduct = catchAsync(async (req, res) => {
     seller: req.user.id,
   }
 
-  // Upload up to 4 images to Cloudinary if provided
+  // Upload up to 4 images to Cloudinary if provided (optimised for web)
   if (Array.isArray(req.files) && req.files.length > 0) {
     const imageUrls = []
     for (const file of req.files) {
@@ -113,6 +113,12 @@ export const createProduct = catchAsync(async (req, res) => {
         const uploadResult = await cloudinary.uploader.upload(file.path, {
           folder: 'b2b-marketplace/products',
           resource_type: 'image',
+          transformation: [
+            {
+              quality: 'auto:good',
+              fetch_format: 'auto',
+            },
+          ],
         })
         imageUrls.push(uploadResult.secure_url)
       } catch (error) {
@@ -148,6 +154,12 @@ export const updateProduct = catchAsync(async (req, res) => {
         const uploadResult = await cloudinary.uploader.upload(file.path, {
           folder: 'b2b-marketplace/products',
           resource_type: 'image',
+          transformation: [
+            {
+              quality: 'auto:good',
+              fetch_format: 'auto',
+            },
+          ],
         })
         imageUrls.push(uploadResult.secure_url)
       } catch (error) {

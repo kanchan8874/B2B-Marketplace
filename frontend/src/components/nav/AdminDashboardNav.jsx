@@ -38,8 +38,8 @@ const AdminDashboardNav = () => {
 
   return (
     <header className="w-full rounded-3xl border-b border-surface-border bg-gradient-to-r from-white via-blue-50/40 to-emerald-50/40 px-4 py-2 shadow-[0_8px_20px_rgba(15,23,42,0.05)] sm:px-6 lg:px-10">
-      {/* Outer shell uses ~8pt grid (16px base spacing) */}
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-6 lg:h-16">
+      {/* Outer shell spans full width inside AppShell */}
+      <div className="flex h-14 w-full items-center justify-between gap-6 lg:h-16">
         {/* Left: Logo + title + description */}
         <div className="flex min-w-0 items-center gap-3">
           <Logo compact />

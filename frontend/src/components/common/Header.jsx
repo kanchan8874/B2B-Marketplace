@@ -31,7 +31,15 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  if (user) return null
+  // Public routes where header should always show
+  // Includes: landing page, legal pages, and all auth pages
+  const publicRoutes = ['/', '/privacy', '/data-kyc', '/terms']
+  const isAuthPage = pathname.startsWith('/auth/')
+  const isPublicRoute = publicRoutes.includes(pathname) || isAuthPage
+
+  // Hide header only if user is logged in AND not on a public route
+  // (authenticated routes have their own layout headers)
+  if (user && !isPublicRoute) return null
 
   return (
     <header className="sticky top-0 z-40 border-b border-surface-border bg-white/95 backdrop-blur-lg">

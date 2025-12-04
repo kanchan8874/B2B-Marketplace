@@ -1,37 +1,35 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FileText, Search, Eye, X } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import DataTable from '../../components/common/DataTable.jsx'
 import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
-import { rfqs } from '../../mocks/rfqs.js'
-
-// Enrich RFQs with seller info and response details
-const enrichedRFQs = rfqs.map((rfq, index) => ({
-  ...rfq,
-  id: `rfq-${index + 1}`,
-  seller: index === 0 ? 'Saffron Harvest Co.' : 'Guardian Health',
-  status: index === 0 ? 'Awaiting Response' : 'Responded',
-  created: '24 Nov 2025',
-  responsePrice: index === 1 ? '₹22 per unit' : null,
-  responseTerms: index === 1 ? 'Delivery within 7 days. Payment: 50% advance, 50% on delivery.' : null,
-  responseDate: index === 1 ? '23 Nov 2025, 14:30' : null,
-}))
+import { listRFQsAdmin } from '../../services/adminService.js'
 
 const createColumns = (onViewClick) => [
-  { header: 'RFQ ID', accessor: 'id' },
+  { header: 'RFQ ID', accessor: '_id' },
   { header: 'Product', accessor: 'productName' },
-  { header: 'Buyer', accessor: 'buyer' },
-  { header: 'Seller', accessor: 'seller' },
-  { header: 'Quantity', accessor: (row) => row.quantity.toLocaleString() },
-  { header: 'Location', accessor: 'location' },
-  { header: 'Created', accessor: 'created' },
+  { header: 'Buyer', accessor: 'buyerName' },
+  { header: 'Seller', accessor: 'sellerName' },
+  { header: 'Quantity', accessor: 'quantityText' },
+  { header: 'Location', accessor: 'locationText' },
+  { header: 'Created', accessor: 'createdText' },
   {
     header: 'Status',
     accessor: 'status',
     cell: (row) => (
-      <StatusTag tone={row.status === 'Responded' ? 'success' : 'warning'}>{row.status}</StatusTag>
+      <StatusTag
+        tone={
+          row.status === 'Quoted' || row.status === 'Accepted'
+            ? 'success'
+            : row.status === 'Declined'
+              ? 'danger'
+              : 'warning'
+        }
+      >
+        {row.status}
+      </StatusTag>
     ),
   },
   {
@@ -71,12 +69,22 @@ const RFQDetailView = ({ rfq, onClose }) => {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">RFQ ID</p>
-            <p className="mt-1 text-sm font-semibold text-neutral-900">{rfq.id}</p>
+            <p className="mt-1 text-sm font-semibold text-neutral-900">{rfq._id}</p>
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</p>
             <div className="mt-1">
-              <StatusTag tone={rfq.status === 'Responded' ? 'success' : 'warning'}>{rfq.status}</StatusTag>
+              <StatusTag
+                tone={
+                  rfq.status === 'Quoted' || rfq.status === 'Accepted'
+                    ? 'success'
+                    : rfq.status === 'Declined'
+                      ? 'danger'
+                      : 'warning'
+                }
+              >
+                {rfq.status}
+              </StatusTag>
             </div>
           </div>
         </div>
@@ -85,15 +93,23 @@ const RFQDetailView = ({ rfq, onClose }) => {
           <h3 className="mb-3 text-sm font-semibold text-neutral-900">Product Information</h3>
           <div className="space-y-2 text-sm">
             <div>
-              <span className="text-neutral-500">Product:</span> <span className="font-medium text-neutral-900">{rfq.productName}</span>
+              <span className="text-neutral-500">Product:</span>{' '}
+              <span className="font-medium text-neutral-900">
+                {rfq.product?.name || 'Product'}
+              </span>
             </div>
             <div>
               <span className="text-neutral-500">Quantity Requested:</span>{' '}
-              <span className="font-medium text-neutral-900">{rfq.quantity.toLocaleString()} units</span>
+              <span className="font-medium text-neutral-900">
+                {rfq.quantity?.toLocaleString?.() ?? '-'} units
+              </span>
             </div>
             <div>
               <span className="text-neutral-500">Delivery Location:</span>{' '}
-              <span className="font-medium text-neutral-900">{rfq.location}</span>
+              <span className="font-medium text-neutral-900">
+                {[rfq.deliveryLocation?.city, rfq.deliveryLocation?.state].filter(Boolean).join(', ') ||
+                  'Location N/A'}
+              </span>
             </div>
           </div>
         </div>
@@ -103,37 +119,50 @@ const RFQDetailView = ({ rfq, onClose }) => {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <p className="text-xs text-neutral-500">Buyer</p>
-              <p className="mt-1 text-sm font-medium text-neutral-900">{rfq.buyer}</p>
+              <p className="mt-1 text-sm font-medium text-neutral-900">
+                {rfq.buyer?.name || rfq.buyer?.companyName || rfq.buyer?.email || 'Buyer'}
+              </p>
             </div>
             <div>
               <p className="text-xs text-neutral-500">Seller</p>
-              <p className="mt-1 text-sm font-medium text-neutral-900">{rfq.seller}</p>
+              <p className="mt-1 text-sm font-medium text-neutral-900">
+                {rfq.seller?.name || rfq.seller?.companyName || rfq.seller?.email || 'Seller'}
+              </p>
             </div>
           </div>
         </div>
 
-        {rfq.status === 'Responded' && rfq.responsePrice && (
+        {rfq.response && (
           <div className="rounded-lg border border-status-success/20 bg-status-success/5 p-4">
             <h3 className="mb-3 text-sm font-semibold text-status-success">Seller Response</h3>
             <div className="space-y-2 text-sm">
               <div>
                 <span className="text-neutral-600">Final Price:</span>{' '}
-                <span className="font-semibold text-neutral-900">{rfq.responsePrice}</span>
+                <span className="font-semibold text-neutral-900">
+                  {rfq.response.finalPrice != null ? `₹${rfq.response.finalPrice.toLocaleString()}` : '—'}
+                </span>
               </div>
               <div>
                 <span className="text-neutral-600">Terms:</span>{' '}
-                <span className="text-neutral-900">{rfq.responseTerms}</span>
+                <span className="text-neutral-900">{rfq.response.terms || '—'}</span>
               </div>
               <div>
                 <span className="text-neutral-600">Response Date:</span>{' '}
-                <span className="text-neutral-900">{rfq.responseDate}</span>
+                <span className="text-neutral-900">
+                  {rfq.response.createdAt
+                    ? new Date(rfq.response.createdAt).toLocaleString()
+                    : '—'}
+                </span>
               </div>
             </div>
           </div>
         )}
 
         <div className="border-t border-surface-border pt-4">
-          <p className="text-xs text-neutral-500">Created: {rfq.created}</p>
+          <p className="text-xs text-neutral-500">
+            Created:{' '}
+            {rfq.createdAt ? new Date(rfq.createdAt).toLocaleString() : '—'}
+          </p>
         </div>
       </div>
       </div>
@@ -144,17 +173,96 @@ const RFQDetailView = ({ rfq, onClose }) => {
 const RFQMonitoring = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedRFQ, setSelectedRFQ] = useState(null)
+  const [rfqs, setRfqs] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const filteredRFQs = enrichedRFQs.filter((item) => {
-    if (!searchQuery) return true
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const data = await listRFQsAdmin()
+
+        if (!isMounted) return
+
+        // Normalize to include latest response (if any)
+        const normalized = (data || []).map((item) => {
+          const latestResponse =
+            Array.isArray(item.responses) && item.responses.length > 0
+              ? item.responses[item.responses.length - 1]
+              : item.response || null
+
+          const productName = item.product?.name || '—'
+          const buyerName =
+            item.buyer?.name || item.buyer?.companyName || item.buyer?.email || '—'
+          const sellerName =
+            item.seller?.name || item.seller?.companyName || item.seller?.email || '—'
+          const quantityText = item.quantity?.toLocaleString?.() ?? '—'
+          const locationText =
+            [item.deliveryLocation?.city, item.deliveryLocation?.state]
+              .filter(Boolean)
+              .join(', ') || '—'
+          const createdText = item.createdAt
+            ? new Date(item.createdAt).toLocaleDateString()
+            : '—'
+
+          return {
+            ...item,
+            response: latestResponse,
+            productName,
+            buyerName,
+            sellerName,
+            quantityText,
+            locationText,
+            createdText,
+          }
+        })
+
+        setRfqs(normalized)
+      } catch (err) {
+        console.error('[Admin RFQMonitoring] Failed to load RFQs', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load RFQs.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const filteredRFQs = useMemo(() => {
+    const list = Array.isArray(rfqs) ? rfqs : []
+    if (!searchQuery) return list
     const query = searchQuery.toLowerCase()
-    return (
-      item.id.toLowerCase().includes(query) ||
-      item.productName.toLowerCase().includes(query) ||
-      item.buyer.toLowerCase().includes(query) ||
-      item.seller.toLowerCase().includes(query)
-    )
-  })
+    return list.filter((item) => {
+      const productName = item.productName || ''
+      const buyerName = item.buyerName || ''
+      const sellerName = item.sellerName || ''
+
+      return (
+        item._id?.toLowerCase?.().includes(query) ||
+        productName.toLowerCase().includes(query) ||
+        buyerName.toLowerCase().includes(query) ||
+        sellerName.toLowerCase().includes(query)
+      )
+    })
+  }, [rfqs, searchQuery])
+
+  const awaitingResponseCount = useMemo(
+    () => (Array.isArray(rfqs) ? rfqs.filter((r) => r.status === 'Pending Response').length : 0),
+    [rfqs],
+  )
 
   const columns = createColumns((rfq) => setSelectedRFQ(rfq))
 
@@ -162,8 +270,13 @@ const RFQMonitoring = () => {
     <div className="space-y-6">
       <Card
         title="RFQ Monitoring"
-        subtitle={`${enrichedRFQs.length} total RFQs • ${enrichedRFQs.filter((r) => r.status === 'Awaiting Response').length} awaiting response`}
+        subtitle={`${rfqs.length} total RFQs • ${awaitingResponseCount} awaiting response`}
       >
+        {error && (
+          <div className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         <div className="mb-6">
           <FormField
             id="rfqSearch"
@@ -176,8 +289,8 @@ const RFQMonitoring = () => {
             icon={Search}
           />
         </div>
-        <DataTable columns={columns} data={filteredRFQs} />
-        {filteredRFQs.length === 0 && (
+        <DataTable columns={columns} data={filteredRFQs} loading={loading} />
+        {!loading && filteredRFQs.length === 0 && (
           <div className="py-12 text-center">
             <FileText className="mx-auto mb-4 h-12 w-12 text-neutral-300" aria-hidden="true" />
             <p className="text-sm text-neutral-500">No RFQs found matching your search.</p>

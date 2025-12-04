@@ -92,7 +92,18 @@ const Dashboard = () => {
         if (!isMounted) return
 
         setMetricsData(summary)
-        setFeaturedCategories((categoriesData || []).slice(0, 6))
+        
+        // Normalize categories to have consistent id field
+        const normalizedCategories = (categoriesData || []).map((cat) => ({
+          id: cat._id || cat.id,
+          _id: cat._id || cat.id,
+          name: cat.name,
+          description: cat.description,
+          image: cat.image || null, // Image from first product in category
+        }))
+
+        // Show ALL categories in the horizontal scroller (no hard limit)
+        setFeaturedCategories(normalizedCategories)
 
         const productsRaw = productsData || []
 
@@ -369,7 +380,8 @@ const Dashboard = () => {
   ]
 
   return (
-    <div className="space-y-10">
+    // Small horizontal padding inside buyer dashboard so left/right gaps look symmetrical
+    <div className="space-y-10 px-1 sm:px-2 lg:px-4">
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
@@ -428,7 +440,7 @@ const Dashboard = () => {
                 <button
                   key={product.id}
                   onClick={() => navigate(`/buyer/products/${product.id}`)}
-                  className="group relative flex-shrink-0 w-[280px] aspect-square overflow-hidden rounded-4xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-[1.02] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  className="group relative flex-shrink-0 w-[330px] aspect-[5/5] overflow-hidden rounded-4xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:scale-[1.02] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 >
                   <div className="relative h-full w-full overflow-hidden">
                     <img
@@ -504,44 +516,45 @@ const Dashboard = () => {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {featuredCategories.map((category) => {
-              const categoryImages = {
-                'Industrial Supplies': 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80',
-                'Food & Agriculture': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=800&q=80',
-                'Health & Pharma': 'https://images.unsplash.com/photo-1580281780460-82d277b0c30d?auto=format&fit=crop&w=800&q=80',
-                'Textiles & Apparel': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80',
-                'Packaging': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80',
-                'Electronics': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-              }
-              const categoryImage = categoryImages[category.name] || 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=800&q=80'
+              // Use category image from API (from first product in category) or null
+              // Only show image if it exists and is a valid URL
+              const categoryImage = category.image && category.image.trim() ? category.image.trim() : null
               
               return (
                 <button
                   key={category.id}
                   onClick={() => navigate(`/buyer/products?category=${category.id}`)}
-                  className="group relative flex-shrink-0 w-[280px] aspect-square overflow-hidden rounded-4xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  className="group relative flex-shrink-0 w-[330px] aspect-[5/5] overflow-hidden rounded-4xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 >
                   {/* Category Image */}
-                  <div className="relative h-full w-full overflow-hidden">
-                    <img
-                      src={categoryImage}
-                      alt={category.name}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=800&q=80'
-                      }}
-                    />
-                    {/* Gradient Overlay - Darker at bottom for better text visibility */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+                  <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-neutral-50 to-neutral-200">
+                    {categoryImage ? (
+                      <img
+                        src={categoryImage}
+                        alt={category.name}
+                        className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 saturate-125 contrast-110 brightness-105"
+                        onError={(e) => {
+                          // Hide image on error, show gradient background instead
+                          e.target.style.display = 'none'
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
+                        <p className="text-sm font-semibold text-neutral-500">{category.name}</p>
+                      </div>
+                    )}
+                    {/* Bottom gradient only — keeps most of image clear while text stays readable */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
                     
                     {/* Category Name */}
                     <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-                      {/* Semi-transparent background for better text readability */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent -z-10" />
-                      <h3 className="text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] leading-tight">
+                      {/* Soft backdrop directly behind text */}
+                      <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-black/40 via-black/5 to-transparent -z-10" />
+                      <h3 className="text-lg font-semibold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.75)] leading-snug">
                         {category.name}
                       </h3>
                       {category.description && (
-                        <p className="mt-2 text-sm font-medium text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)] leading-relaxed">
+                        <p className="mt-1 text-xs font-medium text-slate-100/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)] leading-relaxed line-clamp-2">
                           {category.description}
                         </p>
                       )}

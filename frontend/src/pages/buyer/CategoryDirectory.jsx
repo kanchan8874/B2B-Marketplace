@@ -24,7 +24,17 @@ const CategoryDirectory = () => {
       try {
         const data = await getCategories()
         if (!isMounted) return
-        setCategories(data)
+        
+        // Normalize categories to have consistent id field and image
+        const normalizedCategories = (data || []).map((cat) => ({
+          id: cat._id || cat.id,
+          _id: cat._id || cat.id,
+          name: cat.name,
+          description: cat.description,
+          image: cat.image, // Image from first product in category
+        }))
+        
+        setCategories(normalizedCategories)
       } catch (err) {
         console.error('Failed to load categories:', err)
         if (isMounted) {

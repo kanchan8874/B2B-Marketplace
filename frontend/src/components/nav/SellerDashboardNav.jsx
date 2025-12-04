@@ -50,7 +50,7 @@ const SellerDashboardNav = () => {
 
   return (
     <header className="w-full rounded-3xl border border-surface-border bg-white/95 px-4 py-2 shadow-[0_10px_30px_rgba(15,23,42,0.08)] sm:px-6 lg:px-10">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-6 lg:h-16">
+      <div className="flex h-14 w-full items-center justify-between gap-6 lg:h-16">
         {/* Left: Logo + title */}
         <div className="flex min-w-0 items-center gap-3">
           <Logo compact />

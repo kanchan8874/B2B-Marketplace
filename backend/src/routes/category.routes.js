@@ -1,6 +1,7 @@
 import express from 'express'
 import { authorize, authenticate } from '../middlewares/auth.js'
 import { validateRequest } from '../middlewares/validateRequest.js'
+import { upload } from '../middlewares/upload.js'
 import { categoryValidation, createCategory, listCategories, updateCategory } from '../controllers/category.controller.js'
 
 const router = express.Router()
@@ -56,7 +57,14 @@ router.get('/', listCategories)
  *       201:
  *         description: Category created
  */
-router.post('/', authenticate, authorize('admin'), validateRequest(categoryValidation.upsert), createCategory)
+router.post(
+  '/',
+  authenticate,
+  authorize('admin'),
+  upload.single('image'), // Handle category image upload
+  validateRequest(categoryValidation.upsert),
+  createCategory,
+)
 
 /**
  * @openapi
@@ -91,7 +99,14 @@ router.post('/', authenticate, authorize('admin'), validateRequest(categoryValid
  *       200:
  *         description: Category updated
  */
-router.patch('/:id', authenticate, authorize('admin'), validateRequest(categoryValidation.upsert), updateCategory)
+router.patch(
+  '/:id',
+  authenticate,
+  authorize('admin'),
+  upload.single('image'), // Handle category image upload
+  validateRequest(categoryValidation.upsert),
+  updateCategory,
+)
 
 export default router
 

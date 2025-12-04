@@ -1,5 +1,5 @@
 import PropTypes from 'prop-types'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Users, Store, Search } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import DataTable from '../../components/common/DataTable.jsx'
@@ -7,22 +7,7 @@ import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
-
-// Mock data
-const buyersSeed = [
-  { id: 'b1', name: 'Fresh Basket Retail', contact: 'riya@freshbasket.com', city: 'Mumbai', state: 'Maharashtra', status: 'Active', registered: '15 Jan 2025' },
-  { id: 'b2', name: 'Pulse Hospitals', contact: 'ops@pulsehospitals.in', city: 'Hyderabad', state: 'Telangana', status: 'Active', registered: '12 Jan 2025' },
-  { id: 'b3', name: 'PackMart Solutions', contact: 'contact@packmart.in', city: 'Delhi', state: 'Delhi', status: 'Active', registered: '10 Jan 2025' },
-  { id: 'b4', name: 'Green Grocers Ltd', contact: 'info@greengrocers.in', city: 'Bangalore', state: 'Karnataka', status: 'Active', registered: '8 Jan 2025' },
-]
-
-const sellersSeed = [
-  { id: 's1', name: 'Nova Foods', contact: 'karan@novafoods.com', city: 'Pune', state: 'Maharashtra', status: 'Pending', registered: '20 Jan 2025', gst: '27AABCU9603R1ZX' },
-  { id: 's2', name: 'Guardian Health', contact: 'contact@guardianhealth.in', city: 'Pune', state: 'Maharashtra', status: 'Active', registered: '18 Jan 2025', gst: '27AABCG1234R1ZX' },
-  { id: 's3', name: 'Saffron Harvest Co.', contact: 'info@saffronharvest.com', city: 'Mumbai', state: 'Maharashtra', status: 'Active', registered: '16 Jan 2025', gst: '27AABCS5678R1ZX' },
-  { id: 's4', name: 'PackAge Labs', contact: 'sales@packagelabs.in', city: 'Ahmedabad', state: 'Gujarat', status: 'Pending', registered: '22 Jan 2025', gst: '24AABCP9012R1ZX' },
-  { id: 's5', name: 'MediCare Supplies', contact: 'info@medicare.in', city: 'Chennai', state: 'Tamil Nadu', status: 'Active', registered: '14 Jan 2025', gst: '33AABCM3456R1ZX' },
-]
+import { listAdminUsers, updateUserStatus, updateUserApproval } from '../../services/adminService.js'
 
 const createBuyerColumns = (onActionClick) => [
   { header: 'Buyer Name', accessor: 'name' },
@@ -139,10 +124,12 @@ const createSellerColumns = (onActionClick) => [
 const UserManagement = ({ scope }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState(scope === 'sellers' ? 'seller' : 'buyer')
-  const [buyers, setBuyers] = useState(buyersSeed)
-  const [sellers, setSellers] = useState(sellersSeed)
+  const [buyers, setBuyers] = useState([])
+  const [sellers, setSellers] = useState([])
   const [pendingAction, setPendingAction] = useState(null)
   const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const PAGE_SIZE = 5
 
@@ -151,6 +138,79 @@ const UserManagement = ({ scope }) => {
   const columns = isSellers
     ? createSellerColumns(setPendingAction)
     : createBuyerColumns(setPendingAction)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const [buyersData, sellersData] = await Promise.all([
+          listAdminUsers({ role: 'buyer' }),
+          listAdminUsers({ role: 'seller' }),
+        ])
+
+        if (!isMounted) return
+
+        const mapStatus = (user) => {
+          if (user.role === 'buyer') {
+            return user.isActive ? 'Active' : 'Blocked'
+          }
+
+          // Seller
+          if (user.isApproved === true) {
+            return user.isActive ? 'Active' : 'Blocked'
+          }
+          if (user.isApproved === false) {
+            return 'Rejected'
+          }
+          return 'Pending'
+        }
+
+        setBuyers(
+          (buyersData || []).map((u) => ({
+            id: u._id,
+            name: u.name || u.companyName || u.email,
+            contact: u.email,
+            city: u.location?.city || '',
+            state: u.location?.state || '',
+            status: mapStatus({ ...u, role: 'buyer' }),
+            registered: new Date(u.createdAt || Date.now()).toLocaleDateString(),
+            raw: u,
+          })),
+        )
+        setSellers(
+          (sellersData || []).map((u) => ({
+            id: u._id,
+            name: u.name || u.companyName || u.email,
+            contact: u.email,
+            city: u.location?.city || '',
+            state: u.location?.state || '',
+            status: mapStatus({ ...u, role: 'seller' }),
+            registered: new Date(u.createdAt || Date.now()).toLocaleDateString(),
+            gst: u.gstNumber || '',
+            raw: u,
+          })),
+        )
+      } catch (err) {
+        console.error('Failed to load admin users:', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load users.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filteredData = data.filter((item) => {
     if (!searchQuery) return true
@@ -162,44 +222,59 @@ const UserManagement = ({ scope }) => {
   const startIndex = (page - 1) * PAGE_SIZE
   const paginatedData = filteredData.slice(startIndex, startIndex + PAGE_SIZE)
 
-  const handleConfirmAction = () => {
+  const handleConfirmAction = async () => {
     if (!pendingAction) return
 
     const { type, action, record } = pendingAction
 
-    if (type === 'buyer') {
-      setBuyers((prev) =>
-        prev.map((buyer) =>
-          buyer.id === record.id
-            ? {
-                ...buyer,
-                status: action === 'block' ? 'Blocked' : 'Active',
-              }
-            : buyer,
-        ),
-      )
-    } else if (type === 'seller') {
-      setSellers((prev) =>
-        prev.map((seller) => {
-          if (seller.id !== record.id) return seller
-          if (action === 'approve') {
-            return { ...seller, status: 'Active' }
-          }
-          if (action === 'reject') {
-            return { ...seller, status: 'Rejected' }
-          }
-          if (action === 'block') {
-            return { ...seller, status: 'Blocked' }
-          }
-          if (action === 'unblock') {
-            return { ...seller, status: 'Active' }
-          }
-          return seller
-        }),
-      )
-    }
+    try {
+      if (action === 'approve' || action === 'reject') {
+        const isApproved = action === 'approve'
+        await updateUserApproval(record.id, isApproved)
+        setSellers((prev) =>
+          prev.map((seller) =>
+            seller.id === record.id
+              ? {
+                  ...seller,
+                  status: isApproved ? 'Active' : 'Rejected',
+                }
+              : seller,
+          ),
+        )
+      } else if (action === 'block' || action === 'unblock') {
+        const isActive = action === 'unblock'
+        await updateUserStatus(record.id, isActive)
 
-    setPendingAction(null)
+        if (type === 'buyer') {
+          setBuyers((prev) =>
+            prev.map((buyer) =>
+              buyer.id === record.id
+                ? {
+                    ...buyer,
+                    status: isActive ? 'Active' : 'Blocked',
+                  }
+                : buyer,
+            ),
+          )
+        } else if (type === 'seller') {
+          setSellers((prev) =>
+            prev.map((seller) =>
+              seller.id === record.id
+                ? {
+                    ...seller,
+                    status: isActive ? 'Active' : 'Blocked',
+                  }
+                : seller,
+            ),
+          )
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update user status/approval:', err)
+      setError(err.message || 'Failed to update user.')
+    } finally {
+      setPendingAction(null)
+    }
   }
 
   const handleCancelAction = () => {
@@ -276,8 +351,17 @@ const UserManagement = ({ scope }) => {
             icon={Search}
           />
         </div>
-        <DataTable columns={columns} data={paginatedData} />
-        {filteredData.length === 0 && (
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+        {loading ? (
+          <div className="py-10 text-center text-sm text-neutral-600">Loading users...</div>
+        ) : (
+          <DataTable columns={columns} data={paginatedData} />
+        )}
+        {!loading && filteredData.length === 0 && (
           <div className="py-12 text-center">
             <Users className="mx-auto mb-4 h-12 w-12 text-neutral-300" aria-hidden="true" />
             <p className="text-sm text-neutral-500">No {isSellers ? 'sellers' : 'buyers'} found matching your search.</p>

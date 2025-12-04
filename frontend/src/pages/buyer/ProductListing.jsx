@@ -280,11 +280,11 @@ const ProductListing = () => {
                     return (
                       <div
                         key={product.id}
-                        className={`group relative flex-shrink-0 w-[340px] overflow-hidden rounded-2xl border ${scheme.border} ${scheme.bg} backdrop-blur-sm shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_12px_36px_rgba(0,0,0,0.12)] hover:scale-[1.02] cursor-pointer`}
+                        className={`group relative flex-shrink-0 w-[360px] overflow-hidden rounded-[10px] border ${scheme.border} ${scheme.bg} backdrop-blur-sm shadow-[0_10px_28px_rgba(15,23,42,0.12)] transition-all duration-300 hover:shadow-[0_16px_40px_rgba(15,23,42,0.18)] hover:-translate-y-1 cursor-pointer flex flex-col`}
                         onClick={() => navigate(`/buyer/products/${product.id}`)}
                       >
                         {/* Product Image Section */}
-                        <div className="relative h-56 w-full overflow-hidden bg-neutral-100">
+                        <div className="relative h-64 w-full overflow-hidden bg-neutral-100">
                           <img
                             src={productImage}
                             alt={product.name}
@@ -306,58 +306,71 @@ const ProductListing = () => {
                         </div>
 
                         {/* Product Info Section */}
-                        <div className="p-5 space-y-3">
-                          {/* Seller Name */}
-                          <div className="space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
-                              {product.seller}
-                            </p>
-                            <p className="text-xs font-medium text-neutral-400">
-                              {product.city}, {product.state}
+                        <div className="flex flex-1 flex-col p-5">
+                          {/* Top text block with fixed minimum height so all cards align */}
+                          <div className="space-y-2 min-h-[120px]">
+                            {/* Seller Name */}
+                            <div className="space-y-1">
+                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">
+                                {product.seller}
+                              </p>
+                              <p className="text-xs font-medium text-neutral-400">
+                                {product.city}, {product.state}
+                              </p>
+                            </div>
+
+                            {/* Product Name */}
+                            <h3 className="text-lg font-bold leading-tight text-neutral-900 line-clamp-2 group-hover:text-blue-700 transition-colors">
+                              {product.name}
+                            </h3>
+
+                            {/* Tagline / Description */}
+                            <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
+                              {product.shortDescription || 'Premium quality product ready for bulk orders'}
                             </p>
                           </div>
 
-                          {/* Product Name */}
-                          <h3 className="text-lg font-bold leading-tight text-neutral-900 line-clamp-2 group-hover:text-blue-700 transition-colors">
-                            {product.name}
-                          </h3>
+                          {/* Bottom section: price, MOQ, buttons aligned to card bottom */}
+                          <div className="mt-auto space-y-3 pt-3">
+                            {/* Price Range & MOQ */}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold shadow-sm border ${scheme.badge}`}
+                              >
+                                <span>₹{product.priceMin.toLocaleString()}</span>
+                                <span className="opacity-70">–</span>
+                                <span>₹{product.priceMax.toLocaleString()}</span>
+                              </span>
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-semibold shadow-sm border ${scheme.badge}`}
+                              >
+                                <span className="uppercase tracking-[0.12em]">MOQ</span>
+                                <span>{product.moq.toLocaleString()}</span>
+                              </span>
+                            </div>
 
-                          {/* Tagline / Description */}
-                          <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
-                            {product.shortDescription || 'Premium quality product ready for bulk orders'}
-                          </p>
-
-                          {/* Price Range & MOQ */}
-                          <div className="flex flex-wrap items-center gap-2 pt-2">
-                            <span className={`rounded-full border ${scheme.badge} px-3 py-1 text-xs font-semibold`}>
-                              ₹{product.priceMin.toLocaleString()} – ₹{product.priceMax.toLocaleString()}
-                            </span>
-                            <span className={`rounded-full border ${scheme.badge} px-3 py-1 text-[11px] font-semibold`}>
-                              MOQ {product.moq.toLocaleString()}
-                            </span>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex gap-2 pt-2">
-                            <Button
-                              as={Link}
-                              to={`/buyer/products/${product.id}`}
-                              size="sm"
-                              className="flex-1 justify-center text-xs font-semibold"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              View details
-                            </Button>
-                            <Button
-                              as={Link}
-                              to={`/buyer/rfq/${product.id}`}
-                              size="sm"
-                              variant="secondary"
-                              className="text-xs font-semibold"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              RFQ
-                            </Button>
+                            {/* Action Buttons */}
+                            <div className="flex gap-2">
+                              <Button
+                                as={Link}
+                                to={`/buyer/products/${product.id}`}
+                                size="sm"
+                                className="flex-1 justify-center text-xs font-semibold"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                View details
+                              </Button>
+                              <Button
+                                as={Link}
+                                to={`/buyer/rfq/${product.id}`}
+                                size="sm"
+                                variant="secondary"
+                                className="text-xs font-semibold"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                RFQ
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>

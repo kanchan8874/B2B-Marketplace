@@ -1,48 +1,44 @@
 import PropTypes from 'prop-types'
 
-// Category images mapping
-const categoryImages = {
-  'Industrial Supplies': 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80',
-  'Food & Agriculture': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=800&q=80',
-  'Health & Pharma': 'https://images.unsplash.com/photo-1580281780460-82d277b0c30d?auto=format&fit=crop&w=800&q=80',
-  'Textiles & Apparel': 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80',
-  'Packaging': 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80',
-  'Electronics': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-}
-
 const CategoryGrid = ({ items, onSelect }) => (
-  <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
+  // Responsive grid – clean, card-style layout
+  <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
     {items.map((category) => {
-      const categoryImage = categoryImages[category.name] || 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=800&q=80'
-      
+      const categoryImage = category.image || null
+
       return (
         <button
-          key={category.id}
+          key={category.id || category._id}
           onClick={() => onSelect(category)}
-          className="group relative aspect-square overflow-hidden rounded-4xl bg-white shadow-[0_4px_16px_rgba(0,0,0,0.08)] transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.12)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+          className="group relative aspect-[5/4] overflow-hidden rounded-[5px] bg-white shadow-[0_6px_18px_rgba(15,23,42,0.12)] transition-all duration-300 hover:shadow-[0_14px_40px_rgba(15,23,42,0.2)] hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2  text-center  "
         >
-          {/* Category Image */}
+          {/* Background image */}
           <div className="relative h-full w-full overflow-hidden">
-            <img
-              src={categoryImage}
-              alt={category.name}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-              onError={(e) => {
-                e.target.src = 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=800&q=80'
-              }}
-            />
-            {/* Gradient Overlay - Darker at bottom for better text visibility */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
-            
-            {/* Category Name */}
-            <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
-              {/* Semi-transparent background for better text readability */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent -z-10" />
-              <h3 className="text-xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] leading-tight">
+            {categoryImage ? (
+              <img
+                src={categoryImage}
+                alt={category.name}
+                className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 saturate-115 contrast-110 brightness-105"
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                }}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50">
+                <p className="text-sm font-semibold text-neutral-600">{category.name}</p>
+              </div>
+            )}
+
+            {/* Bottom-focused gradient – keeps image clear, darkens lower area for text */}
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/100 via-black/45 to-transparent" />
+
+            {/* Text content slightly above bottom, centered horizontally */}
+            <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center text-center px-4 pb-5">
+              <h3 className="text-xl font-semibold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] leading-snug">
                 {category.name}
               </h3>
               {category.description && (
-                <p className="mt-2 text-sm font-medium text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.7)] leading-relaxed">
+                <p className="mt-2 text-sm text-slate-100/95 drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)] leading-relaxed line-clamp-2">
                   {category.description}
                 </p>
               )}
@@ -57,10 +53,12 @@ const CategoryGrid = ({ items, onSelect }) => (
 CategoryGrid.propTypes = {
   items: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.string,
+      _id: PropTypes.string,
       name: PropTypes.string.isRequired,
       description: PropTypes.string,
       icon: PropTypes.string,
+      image: PropTypes.string, // Image URL from first product in category
     })
   ).isRequired,
   onSelect: PropTypes.func.isRequired,

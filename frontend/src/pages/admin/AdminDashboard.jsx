@@ -1,100 +1,14 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, Store, Package, AlertCircle, FileText, TrendingUp } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import DataTable from '../../components/common/DataTable.jsx'
 import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
+import { getAdminDashboardSummary, listAdminUsers, listPendingProductsAdmin, listRFQsAdmin } from '../../services/adminService.js'
+import { getPendingSellerKYCs, getPendingBuyerKYCs } from '../../services/kycService.js'
 
-// Mock data - in real app, this would come from API
-const buyers = [
-  { id: 'b1', name: 'Fresh Basket Retail', contact: 'riya@freshbasket.com', city: 'Mumbai', state: 'Maharashtra', status: 'Active' },
-  { id: 'b2', name: 'Pulse Hospitals', contact: 'ops@pulsehospitals.in', city: 'Hyderabad', state: 'Telangana', status: 'Active' },
-  { id: 'b3', name: 'PackMart Solutions', contact: 'contact@packmart.in', city: 'Delhi', state: 'Delhi', status: 'Active' },
-]
-
-const sellers = [
-  { id: 's1', name: 'Nova Foods', contact: 'karan@novafoods.com', city: 'Pune', state: 'Maharashtra', status: 'Pending' },
-  { id: 's2', name: 'Guardian Health', contact: 'contact@guardianhealth.in', city: 'Pune', state: 'Maharashtra', status: 'Active' },
-  { id: 's3', name: 'Saffron Harvest Co.', contact: 'info@saffronharvest.com', city: 'Mumbai', state: 'Maharashtra', status: 'Active' },
-  { id: 's4', name: 'PackAge Labs', contact: 'sales@packagelabs.in', city: 'Ahmedabad', state: 'Gujarat', status: 'Pending' },
-]
-
-const products = [
-  { id: 'p1', name: 'Cold-Pressed Cooking Oil', seller: 'Saffron Harvest Co.', status: 'Live', category: 'Food & Agriculture' },
-  { id: 'p2', name: 'N95 Medical Respirators', seller: 'Guardian Health', status: 'Pending', category: 'Health & Pharma' },
-  { id: 'p3', name: 'Eco Kraft Boxes', seller: 'PackAge Labs', status: 'Pending', category: 'Packaging' },
-]
-
-const rfqs = [
-  {
-    id: 'rfq-2109',
-    product: 'Eco Kraft Boxes',
-    buyer: 'PackMart Solutions',
-    seller: 'PackAge Labs',
-    status: 'Awaiting response',
-    created: '24 Nov 2025',
-  },
-  {
-    id: 'rfq-2110',
-    product: 'N95 Medical Respirators',
-    buyer: 'Pulse Hospitals',
-    seller: 'Guardian Health',
-    status: 'Responded',
-    created: '23 Nov 2025',
-  },
-  {
-    id: 'rfq-2111',
-    product: 'Cold-Pressed Cooking Oil',
-    buyer: 'Fresh Basket Retail',
-    seller: 'Saffron Harvest Co.',
-    status: 'Awaiting response',
-    created: '22 Nov 2025',
-  },
-]
-
-// Mock KYC queues – in real app this would come from the admin KYC APIs
-const sellerKYCQueue = [
-  {
-    id: 'skyc-101',
-    name: 'Nova Foods',
-    contact: 'kyc@novafoods.com',
-    business: 'Food & FMCG',
-    city: 'Pune',
-    state: 'Maharashtra',
-    submitted: '2 days ago',
-  },
-  {
-    id: 'skyc-102',
-    name: 'PackAge Labs',
-    contact: 'compliance@packagelabs.in',
-    business: 'Packaging',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    submitted: '3 days ago',
-  },
-]
-
-const buyerKYCQueue = [
-  {
-    id: 'bkyc-201',
-    name: 'Fresh Basket Retail',
-    contact: 'kyc@freshbasket.com',
-    business: 'Modern trade retail',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    submitted: '1 day ago',
-  },
-  {
-    id: 'bkyc-202',
-    name: 'Pulse Hospitals',
-    contact: 'kyc@pulsehospitals.in',
-    business: 'Healthcare',
-    city: 'Hyderabad',
-    state: 'Telangana',
-    submitted: '4 days ago',
-  },
-]
+// Helper components & columns use dynamic data loaded from APIs
 const KPICard = ({ icon: Icon, label, value, helper, gradient, borderColor, iconBg, iconColor, textColor }) => (
   <div
     className={`group relative overflow-hidden rounded-3xl border-2 ${borderColor} bg-gradient-to-br ${gradient} backdrop-blur-xl p-5 shadow-[0_10px_36px_rgba(0,0,0,0.10)] transition-all duration-300 hover:shadow-[0_14px_50px_rgba(0,0,0,0.16)] hover:scale-[1.01]`}
@@ -218,6 +132,118 @@ const columnsBuyerKYC = [
 ]
 
 const AdminDashboard = () => {
+  const [summary, setSummary] = useState({ totalProducts: 0, pendingProducts: 0, totalRFQs: 0 })
+  const [buyers, setBuyers] = useState([])
+  const [sellers, setSellers] = useState([])
+  const [products, setProducts] = useState([])
+  const [rfqs, setRfqs] = useState([])
+  const [sellerKYCQueue, setSellerKYCQueue] = useState([])
+  const [buyerKYCQueue, setBuyerKYCQueue] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+
+        const [
+          summaryData,
+          buyersData,
+          sellersData,
+          pendingProductsData,
+          rfqsData,
+          sellerKYCData,
+          buyerKYCData,
+        ] = await Promise.all([
+          getAdminDashboardSummary(),
+          listAdminUsers({ role: 'buyer' }),
+          listAdminUsers({ role: 'seller' }),
+          listPendingProductsAdmin(),
+          listRFQsAdmin(),
+          // Use 'All' so dashboard always shows latest KYC activity (not only Pending)
+          getPendingSellerKYCs('All', 1, 5),
+          getPendingBuyerKYCs('All', 1, 5),
+        ])
+
+        if (!isMounted) return
+
+        console.log('[AdminDashboard] API responses:', {
+          summaryData,
+          buyersData,
+          sellersData,
+          pendingProductsData,
+          rfqsData,
+          sellerKYCData,
+          buyerKYCData,
+        })
+
+        setSummary(summaryData || {})
+        setBuyers(Array.isArray(buyersData) ? buyersData : [])
+        setSellers(Array.isArray(sellersData) ? sellersData : [])
+        setProducts(Array.isArray(pendingProductsData) ? pendingProductsData : [])
+        setRfqs(Array.isArray(rfqsData) ? rfqsData : [])
+
+        // KYC data structure: { success, message, data: { kycs: [...], pagination: {...} } }
+        const rawSellerKYCs = sellerKYCData?.data?.kycs || sellerKYCData?.kycs || []
+        const rawBuyerKYCs = buyerKYCData?.data?.kycs || buyerKYCData?.kycs || []
+
+        console.log('[AdminDashboard] Seller KYC data:', { sellerKYCData, rawSellerKYCs })
+        console.log('[AdminDashboard] Buyer KYC data:', { buyerKYCData, rawBuyerKYCs })
+
+        const normalizedSellerKYC = Array.isArray(rawSellerKYCs)
+          ? rawSellerKYCs.map((kyc) => ({
+              id: kyc._id,
+              name: kyc.businessName || kyc.seller?.companyName || kyc.seller?.name || '—',
+              contact: kyc.seller?.email || kyc.email || '—',
+              city: kyc.city || '',
+              state: kyc.state || '',
+              submitted: kyc.createdAt ? new Date(kyc.createdAt).toLocaleDateString() : '—',
+              status: kyc.status || 'Pending',
+            }))
+          : []
+
+        const normalizedBuyerKYC = Array.isArray(rawBuyerKYCs)
+          ? rawBuyerKYCs.map((kyc) => ({
+              id: kyc._id,
+              name: kyc.businessName || kyc.buyer?.companyName || kyc.buyer?.name || '—',
+              contact: kyc.buyer?.email || kyc.email || '—',
+              city: kyc.city || '',
+              state: kyc.state || '',
+              submitted: kyc.createdAt ? new Date(kyc.createdAt).toLocaleDateString() : '—',
+              status: kyc.status || 'Pending',
+            }))
+          : []
+
+        setSellerKYCQueue(normalizedSellerKYC)
+        setBuyerKYCQueue(normalizedBuyerKYC)
+      } catch (err) {
+        console.error('[AdminDashboard] Failed to load admin dashboard data:', err)
+        console.error('[AdminDashboard] Error details:', {
+          message: err.message,
+          stack: err.stack,
+          response: err.response,
+        })
+        if (isMounted) {
+          setError(err.message || 'Failed to load admin dashboard.')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   const kpis = useMemo(
     () => [
       {
@@ -235,7 +261,7 @@ const AdminDashboard = () => {
         icon: Store,
         label: 'Total Sellers',
         value: sellers.length.toLocaleString(),
-        helper: `${sellers.filter((s) => s.status === 'Pending').length} pending approvals`,
+        helper: `${sellers.filter((s) => s.isApproved === false).length} pending approvals`,
         gradient: 'from-teal-500/20 via-teal-400/15 to-teal-500/20',
         borderColor: 'border-teal-500',
         iconBg: 'bg-teal-500/20',
@@ -245,8 +271,8 @@ const AdminDashboard = () => {
       {
         icon: Package,
         label: 'Total Products',
-        value: products.length.toLocaleString(),
-        helper: 'Live inventory',
+        value: (summary.totalProducts || 0).toLocaleString(),
+        helper: 'All SKUs in catalogue',
         gradient: 'from-yellow-500/20 via-yellow-400/15 to-yellow-500/20',
         borderColor: 'border-yellow-500',
         iconBg: 'bg-yellow-500/20',
@@ -256,7 +282,7 @@ const AdminDashboard = () => {
       {
         icon: AlertCircle,
         label: 'Pending Approvals',
-        value: products.filter((p) => p.status === 'Pending').length.toString(),
+        value: (summary.pendingProducts || 0).toString(),
         helper: 'Products awaiting review',
         gradient: 'from-blue-500/20 via-blue-400/15 to-blue-500/20',
         borderColor: 'border-blue-500',
@@ -268,7 +294,7 @@ const AdminDashboard = () => {
         icon: FileText,
         label: 'Total RFQs',
         value: rfqs.length.toLocaleString(),
-        helper: `${rfqs.filter((r) => r.status === 'Awaiting response').length} awaiting reply`,
+        helper: `${rfqs.filter((r) => r.status === 'Pending Response').length} awaiting reply`,
         gradient: 'from-teal-500/20 via-teal-400/15 to-teal-500/20',
         borderColor: 'border-teal-500',
         iconBg: 'bg-teal-500/20',
@@ -276,21 +302,25 @@ const AdminDashboard = () => {
         textColor: 'text-teal-700',
       },
     ],
-    []
+    [buyers, sellers, summary, rfqs]
   )
 
   const kpisSecondary = useMemo(() => {
-    const pendingSellers = sellers.filter((s) => s.status === 'Pending').length
-    const awaitingRFQs = rfqs.filter((r) => r.status === 'Awaiting response').length
-    const respondedRFQs = rfqs.filter((r) => r.status === 'Responded').length
-    const liveProducts = products.filter((p) => p.status === 'Live').length
+    const pendingSellerApprovals = sellers.filter((s) => s.isApproved === false).length
+    const awaitingRFQs = rfqs.filter((r) => r.status === 'Pending Response').length
+    const respondedRFQs = rfqs.filter((r) => r.status === 'Quoted' || r.status === 'Accepted').length
+    const liveProducts = (summary.totalProducts || 0) - (summary.pendingProducts || 0)
+    const pendingSellerKYCs = sellerKYCQueue.filter((k) => k.status === 'Pending').length
+    const pendingBuyerKYCs = buyerKYCQueue.filter((k) => k.status === 'Pending').length
+    const blockedAccounts =
+      buyers.filter((b) => b.isActive === false).length + sellers.filter((s) => s.isActive === false).length
 
     return [
       {
         icon: Store,
         label: 'Seller approvals pending',
-        value: pendingSellers.toString(),
-        helper: 'Sellers awaiting review',
+        value: pendingSellerApprovals.toString(),
+        helper: 'Sellers awaiting user approval',
         gradient: 'from-indigo-500/20 via-indigo-400/15 to-indigo-500/20',
         borderColor: 'border-indigo-500',
         iconBg: 'bg-indigo-500/20',
@@ -332,8 +362,19 @@ const AdminDashboard = () => {
       },
       {
         icon: Users,
+        label: 'KYC pending',
+        value: (pendingSellerKYCs + pendingBuyerKYCs).toString(),
+        helper: `${pendingSellerKYCs} seller • ${pendingBuyerKYCs} buyer`,
+        gradient: 'from-amber-500/20 via-amber-400/15 to-amber-500/20',
+        borderColor: 'border-amber-500',
+        iconBg: 'bg-amber-500/20',
+        iconColor: 'text-amber-700',
+        textColor: 'text-amber-700',
+      },
+      {
+        icon: Users,
         label: 'Blocked accounts',
-        value: '0',
+        value: blockedAccounts.toString(),
         helper: 'Monitoring risk & abuse',
         gradient: 'from-rose-500/20 via-rose-400/15 to-rose-500/20',
         borderColor: 'border-red-700',
@@ -342,28 +383,41 @@ const AdminDashboard = () => {
         textColor: 'text-rose-700',
       },
     ]
-  }, [])
+  }, [buyers, sellers, rfqs, summary, products, sellerKYCQueue, buyerKYCQueue])
 
-  const pendingProducts = useMemo(() => products.filter((p) => p.status === 'Pending'), [])
+  const pendingProducts = useMemo(() => products, [products])
 
   return (
     <div className="space-y-8">
       {/* KPI Overview Cards */}
       <section>
         <h2 className="mb-4 text-xl font-semibold text-neutral-900">Overview Metrics</h2>
+        {error && (
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        )}
         <div className="rounded-3xl border border-neutral-300/80 bg-white/80 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-            {kpis.map((kpi) => (
-              <KPICard key={kpi.label} {...kpi} />
-            ))}
+            {loading
+              ? Array.from({ length: 5 }).map((_, index) => (
+                  <div
+                    // eslint-disable-next-line react/no-array-index-key
+                    key={index}
+                    className="h-32 animate-pulse rounded-3xl border border-neutral-200 bg-neutral-50"
+                  />
+                ))
+              : kpis.map((kpi) => <KPICard key={kpi.label} {...kpi} />)}
           </div>
 
           {/* Secondary KPI row */}
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-            {kpisSecondary.map((kpi) => (
-              <KPICard key={kpi.label} {...kpi} />
-            ))}
-          </div>
+          {!loading && (
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+              {kpisSecondary.map((kpi) => (
+                <KPICard key={kpi.label} {...kpi} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -383,7 +437,7 @@ const AdminDashboard = () => {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card
             title="Seller KYC queue"
-            subtitle={`Showing latest ${Math.min(5, sellerKYCQueue.length)} of ${sellerKYCQueue.length} sellers pending verification`}
+            subtitle={`Showing latest ${Math.min(5, sellerKYCQueue.length)} of ${sellerKYCQueue.length} seller KYC submissions`}
             className="border border-amber-200/70"
           >
             <div className="max-h-64 overflow-y-auto pr-1">
@@ -397,7 +451,7 @@ const AdminDashboard = () => {
           </Card>
           <Card
             title="Buyer KYC queue"
-            subtitle={`Showing latest ${Math.min(5, buyerKYCQueue.length)} of ${buyerKYCQueue.length} buyers pending verification`}
+            subtitle={`Showing latest ${Math.min(5, buyerKYCQueue.length)} of ${buyerKYCQueue.length} buyer KYC submissions`}
             className="border border-sky-200/70"
           >
             <div className="max-h-64 overflow-y-auto pr-1">

@@ -31,7 +31,16 @@ export const errorHandler = (err, req, res, next) => {
     details = err.details
   } else if (err.name === 'MongoServerError') {
     statusCode = StatusCodes.BAD_REQUEST
-    message = 'Database error'
+    // Handle duplicate key errors (E11000)
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern || {})[0] || 'field'
+      message = `${field === 'slug' ? 'Category slug' : field} already exists. Please use a different ${field === 'slug' ? 'name' : field}.`
+    } else {
+      message = 'Database error'
+    }
+    if (env.NODE_ENV !== 'production') {
+      details = { mongoError: err.message, code: err.code }
+    }
   }
 
   if (env.NODE_ENV !== 'production') {

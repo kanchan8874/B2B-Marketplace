@@ -26,7 +26,25 @@ export const adminValidation = {
 }
 
 export const listUsers = catchAsync(async (req, res) => {
-  const users = await User.find().select('-passwordHash')
+  const { role, status } = req.query
+
+  const filter = {}
+
+  // Optional role filter (buyer | seller)
+  if (role && ['buyer', 'seller', 'admin'].includes(role)) {
+    filter.role = role
+  }
+
+  // Optional status filter: active | inactive | blocked
+  if (status) {
+    if (status === 'active') {
+      filter.isActive = true
+    } else if (status === 'inactive' || status === 'blocked') {
+      filter.isActive = false
+    }
+  }
+
+  const users = await User.find(filter).select('-passwordHash')
   return res.status(StatusCodes.OK).json(success(users))
 })
 
@@ -78,7 +96,19 @@ export const moderateProduct = catchAsync(async (req, res) => {
 })
 
 export const listRFQsForAdmin = catchAsync(async (req, res) => {
-  const rfqs = await RFQ.find().sort('-createdAt')
+  const { status } = req.query
+
+  const filter = {}
+  if (status) {
+    filter.status = status
+  }
+
+  const rfqs = await RFQ.find(filter)
+    .populate('product', 'name images priceMin priceMax moq')
+    .populate('buyer', 'name companyName email')
+    .populate('seller', 'name companyName email')
+    .sort('-createdAt')
+
   return res.status(StatusCodes.OK).json(success(rfqs))
 })
 

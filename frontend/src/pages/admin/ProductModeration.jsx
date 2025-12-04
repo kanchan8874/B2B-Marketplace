@@ -31,10 +31,10 @@ const renderProductCell = (row) => (
 
 const allProductsColumns = (onView) => [
   { header: 'Product', accessor: 'name', cell: renderProductCell },
-  { header: 'Seller', accessor: (row) => row.seller?.name || '—' },
-  { header: 'Category', accessor: (row) => row.category?.name || '—' },
-  { header: 'Price Range', accessor: (row) => `₹${row.priceMin} - ₹${row.priceMax}` },
-  { header: 'MOQ', accessor: (row) => row.moq.toLocaleString() },
+  { header: 'Seller', accessor: 'sellerName' },
+  { header: 'Category', accessor: 'categoryName' },
+  { header: 'Price Range', accessor: 'priceRange' },
+  { header: 'MOQ', accessor: 'moqText' },
   { header: 'Submitted', accessor: 'submittedOn' },
   {
     header: 'Status',
@@ -73,10 +73,10 @@ const allProductsColumns = (onView) => [
 
 const createPendingProductsColumns = (onActionClick, onView) => [
   { header: 'Product', accessor: 'name', cell: renderProductCell },
-  { header: 'Seller', accessor: (row) => row.seller?.name || '—' },
-  { header: 'Category', accessor: (row) => row.category?.name || '—' },
-  { header: 'Price Range', accessor: (row) => `₹${row.priceMin} - ₹${row.priceMax}` },
-  { header: 'MOQ', accessor: (row) => row.moq.toLocaleString() },
+  { header: 'Seller', accessor: 'sellerName' },
+  { header: 'Category', accessor: 'categoryName' },
+  { header: 'Price Range', accessor: 'priceRange' },
+  { header: 'MOQ', accessor: 'moqText' },
   { header: 'Submitted', accessor: 'submittedOn' },
   {
     header: 'Actions',
@@ -123,7 +123,7 @@ const ProductModeration = () => {
   const [pendingAction, setPendingAction] = useState(null)
   const navigate = useNavigate()
 
-  const PAGE_SIZE = 7
+  const PAGE_SIZE = 10
 
   useEffect(() => {
     const load = async () => {
@@ -135,6 +135,10 @@ const ProductModeration = () => {
           (data || []).map((p) => ({
             ...p,
             submittedOn: new Date(p.createdAt).toLocaleDateString(),
+            sellerName: p.seller?.name || p.seller?.companyName || '—',
+            categoryName: p.category?.name || '—',
+            priceRange: `₹${p.priceMin} - ₹${p.priceMax}` ,
+            moqText: p.moq?.toLocaleString?.() ?? '—',
           })),
         )
       } catch (err) {

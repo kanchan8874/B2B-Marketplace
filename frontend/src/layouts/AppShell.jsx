@@ -26,7 +26,7 @@ const AppShell = ({ children }) => {
       <main
         id="main"
         className={`flex-1 ${
-          isHomePage ? 'w-full overflow-hidden' : 'mx-auto w-full max-w-7xl px-4 pb-4 pt-4 sm:px-6 lg:px-8'
+          isHomePage ? 'w-full overflow-hidden' : 'w-full px-5 pb-5 pt-0 sm:px-6 lg:px-8 '
         }`}
       >
         {children}

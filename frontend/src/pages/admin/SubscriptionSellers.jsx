@@ -1,74 +1,119 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Card from '../../components/common/Card.jsx'
 import DataTable from '../../components/common/DataTable.jsx'
 import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
+import { listAdminUsers } from '../../services/adminService.js'
+import { listProducts } from '../../services/productService.js'
 
-// NOTE: In real implementation, this data will come from an admin subscription API.
-// For now, keep a lightweight local copy of tier limits so the UI can render.
-const SUBSCRIPTION_TIERS = {
-  Silver: { productLimit: 5 },
-  Gold: { productLimit: 20 },
-  Platinum: { productLimit: 100 },
+// Keep in sync with backend SUBSCRIPTION_TIERS defaults
+const PLAN_LIMITS = {
+  Silver: { productLimit: 10 },
+  Gold: { productLimit: 50 },
+  Platinum: { productLimit: 200 },
 }
-
-// Temporary mock list – keep structure similar to SubscriptionManagement
-const sellers = [
-  {
-    id: 's1',
-    name: 'Nova Foods',
-    email: 'karan@novafoods.com',
-    city: 'Pune',
-    state: 'Maharashtra',
-    tier: 'Gold',
-    productsUsed: 14,
-    status: 'Active',
-  },
-  {
-    id: 's2',
-    name: 'Guardian Health',
-    email: 'contact@guardianhealth.in',
-    city: 'Pune',
-    state: 'Maharashtra',
-    tier: 'Platinum',
-    productsUsed: 22,
-    status: 'Active',
-  },
-  {
-    id: 's3',
-    name: 'PackAge Labs',
-    email: 'sales@packagelabs.in',
-    city: 'Ahmedabad',
-    state: 'Gujarat',
-    tier: 'Silver',
-    productsUsed: 4,
-    status: 'Active',
-  },
-  {
-    id: 's4',
-    name: 'Saffron Harvest Co.',
-    email: 'info@saffronharvest.com',
-    city: 'Mumbai',
-    state: 'Maharashtra',
-    tier: 'Silver',
-    productsUsed: 5,
-    status: 'Limit reached',
-  },
-]
 
 const SubscriptionSellers = () => {
   const [tierFilter, setTierFilter] = useState('All')
   const [search, setSearch] = useState('')
+  const [sellers, setSellers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+
+        // 1) Load all sellers
+        const sellerUsers = await listAdminUsers({ role: 'seller' })
+
+        // 2) For each seller, count their active (Live) products
+        const withUsage = await Promise.all(
+          sellerUsers.map(async (seller) => {
+            try {
+              const products = await listProducts({
+                includeAuth: true,
+                seller: seller._id,
+                status: 'Live',
+              })
+
+              const productsUsed = Array.isArray(products) ? products.length : 0
+              const tier = seller.subscriptionTier || 'Silver'
+              const limit = PLAN_LIMITS[tier]?.productLimit || 0
+
+              let status = 'Active'
+              if (seller.isActive === false) {
+                status = 'Blocked'
+              } else if (limit > 0 && productsUsed >= limit) {
+                status = 'Limit reached'
+              }
+
+              return {
+                id: seller._id,
+                name: seller.companyName || seller.name || seller.email,
+                email: seller.email,
+                city: seller.city || seller.address?.city || '—',
+                state: seller.state || seller.address?.state || '',
+                tier,
+                productsUsed,
+                status,
+              }
+            } catch (err) {
+              // If product fetch fails for one seller, still keep them in the list
+              console.error('[SubscriptionSellers] Failed to load products for seller', seller._id, err)
+              return {
+                id: seller._id,
+                name: seller.companyName || seller.name || seller.email,
+                email: seller.email,
+                city: seller.city || seller.address?.city || '—',
+                state: seller.state || seller.address?.state || '',
+                tier: seller.subscriptionTier || 'Silver',
+                productsUsed: 0,
+                status: seller.isActive === false ? 'Blocked' : 'Active',
+              }
+            }
+          }),
+        )
+
+        if (isMounted) {
+          setSellers(withUsage)
+        }
+      } catch (err) {
+        console.error('[SubscriptionSellers] Failed to load sellers', err)
+        if (isMounted) {
+          setError(err.message || 'Failed to load sellers')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    load()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const rows = useMemo(() => {
-    return sellers.filter((seller) => {
+    const base = Array.isArray(sellers) ? sellers : []
+    return base.filter((seller) => {
       if (tierFilter !== 'All' && seller.tier !== tierFilter) return false
       if (!search) return true
       const term = search.toLowerCase()
-      return seller.name.toLowerCase().includes(term) || seller.email.toLowerCase().includes(term)
+      return (
+        seller.name.toLowerCase().includes(term) ||
+        (seller.email && seller.email.toLowerCase().includes(term))
+      )
     })
-  }, [tierFilter, search])
+  }, [sellers, tierFilter, search])
 
   const columns = [
     {
@@ -100,8 +145,8 @@ const SubscriptionSellers = () => {
       header: 'Listings used',
       accessor: 'productsUsed',
       cell: (row) => {
-        const limit = SUBSCRIPTION_TIERS[row.tier]?.productLimit || 0
-        const pct = Math.min(100, Math.round((row.productsUsed / limit) * 100))
+        const limit = PLAN_LIMITS[row.tier]?.productLimit || 0
+        const pct = limit > 0 ? Math.min(100, Math.round((row.productsUsed / limit) * 100)) : 0
         return (
           <div>
             <p className="text-xs text-neutral-800">
@@ -152,6 +197,11 @@ const SubscriptionSellers = () => {
         title="Sellers"
         subtitle="Search and filter by tier. Use Manage subscription to open the detailed edit view for a seller."
       >
+        {error && (
+          <p className="mb-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="font-semibold text-neutral-700">Filter by tier:</span>
@@ -180,7 +230,7 @@ const SubscriptionSellers = () => {
             />
           </div>
         </div>
-        <DataTable columns={columns} data={rows} />
+        <DataTable columns={columns} data={rows} loading={loading} />
       </Card>
     </div>
   )

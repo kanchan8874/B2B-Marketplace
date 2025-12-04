@@ -12,20 +12,22 @@ export const getCategories = async () => {
 
 /**
  * Admin: Create a new category
- * @param {{ name: string, description?: string, icon?: string, slug?: string }} body
+ * @param {FormData|Object} body - FormData if image upload, otherwise plain object
+ * @param {boolean} isFormData - Whether body is FormData
  */
-export const createCategory = async (body) => {
-  const response = await post('/categories', body, { includeAuth: true })
+export const createCategory = async (body, isFormData = false) => {
+  const response = await post('/categories', body, { includeAuth: true, isFormData })
   return response.data
 }
 
 /**
  * Admin: Update an existing category (including toggling isActive)
  * @param {string} id
- * @param {Object} body
+ * @param {FormData|Object} body - FormData if image upload, otherwise plain object
+ * @param {boolean} isFormData - Whether body is FormData
  */
-export const updateCategory = async (id, body) => {
-  const response = await patch(`/categories/${id}`, body, { includeAuth: true })
+export const updateCategory = async (id, body, isFormData = false) => {
+  const response = await patch(`/categories/${id}`, body, { includeAuth: true, isFormData })
   return response.data
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Tag, Plus, Edit2, CheckCircle2, XCircle, Archive } from 'lucide-react'
+import { Tag, Plus, Edit2, CheckCircle2, XCircle, Archive, UploadCloud } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
@@ -17,6 +17,8 @@ const CategoryManagement = () => {
     name: '',
     description: '',
   })
+  const [categoryImage, setCategoryImage] = useState(null) // File object for upload
+  const [previewImage, setPreviewImage] = useState(null) // Preview URL
 
   useEffect(() => {
     loadCategories()
@@ -41,6 +43,8 @@ const CategoryManagement = () => {
       name: '',
       description: '',
     })
+    setCategoryImage(null)
+    setPreviewImage(null)
     setFormMode('create')
     setEditingId(null)
   }
@@ -57,6 +61,21 @@ const CategoryManagement = () => {
       name: cat.name || '',
       description: cat.description || '',
     })
+    setCategoryImage(null)
+    setPreviewImage(cat.image || null) // Show existing image as preview
+  }
+  
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setCategoryImage(file)
+      // Create preview URL
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviewImage(reader.result)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const handleSubmit = async (event) => {
@@ -67,17 +86,34 @@ const CategoryManagement = () => {
       setSaving(true)
       setError('')
 
-      if (formMode === 'create') {
-        const created = await createCategory({
+      // Use FormData only if image is being uploaded, otherwise use JSON
+      let payload
+      let isFormData = false
+      
+      if (categoryImage) {
+        // Create FormData if image is being uploaded
+        const formData = new FormData()
+        formData.append('name', form.name.trim())
+        if (form.description.trim()) {
+          formData.append('description', form.description.trim())
+        }
+        formData.append('image', categoryImage)
+        payload = formData
+        isFormData = true
+      } else {
+        // Use JSON if no image
+        payload = {
           name: form.name.trim(),
           description: form.description.trim() || undefined,
-        })
+        }
+        isFormData = false
+      }
+
+      if (formMode === 'create') {
+        const created = await createCategory(payload, isFormData)
         setCategories((prev) => [created, ...prev])
       } else if (editingId) {
-        const updated = await updateCategory(editingId, {
-          name: form.name.trim(),
-          description: form.description.trim() || undefined,
-        })
+        const updated = await updateCategory(editingId, payload, isFormData)
         setCategories((prev) => prev.map((c) => (c._id === updated._id ? updated : c)))
       }
 
@@ -92,7 +128,16 @@ const CategoryManagement = () => {
 
   const handleToggleActive = async (cat) => {
     try {
-      const updated = await updateCategory(cat._id, { isActive: !cat.isActive })
+      // Send full payload so backend Joi validation (name required) passes
+      const payload = {
+        name: cat.name,
+        description: cat.description || '',
+        icon: cat.icon || '',
+        image: cat.image || undefined,
+        isActive: !cat.isActive,
+      }
+
+      const updated = await updateCategory(cat._id, payload)
       setCategories((prev) => prev.map((c) => (c._id === updated._id ? updated : c)))
     } catch (err) {
       console.error('Failed to update category status:', err)
@@ -190,6 +235,49 @@ const CategoryManagement = () => {
               value={form.description}
               onChange={handleChange('description')}
             />
+            
+            {/* Category Image Upload */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-neutral-900 tracking-tight">
+                Category Image
+                <span className="ml-1.5 text-xs font-normal text-neutral-500">(Optional)</span>
+              </label>
+              <div className="space-y-3">
+                {previewImage && (
+                  <div className="relative">
+                    <img
+                      src={previewImage}
+                      alt="Category preview"
+                      className="h-32 w-full rounded-xl object-cover border border-neutral-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewImage(null)
+                        setCategoryImage(null)
+                      }}
+                      className="absolute top-2 right-2 rounded-full bg-red-500 p-1.5 text-white hover:bg-red-600"
+                      aria-label="Remove image"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                {!previewImage && (
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/50 px-4 py-6 text-center transition-colors hover:border-blue-300 hover:bg-blue-50">
+                    <UploadCloud className="h-6 w-6 text-blue-600" />
+                    <span className="text-sm font-semibold text-blue-700">Click to upload category image</span>
+                    <span className="text-xs text-neutral-500">PNG, JPG up to 5MB</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
 
             <div className="flex items-center justify-end gap-3 border-t border-neutral-200 pt-4">
               <Button
@@ -243,25 +331,37 @@ const CategoryManagement = () => {
               No categories yet. Use the form on the left to create your first category.
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="max-h-[460px] space-y-4 overflow-y-auto pr-1">
               <div className="space-y-2">
                 {activeCategories.map((cat) => (
                   <div
                     key={cat._id}
                     className="flex items-start justify-between gap-3 rounded-2xl border border-neutral-200 bg-white/90 px-4 py-3 text-sm"
                   >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        {cat.icon && <span className="text-lg">{cat.icon}</span>}
-                        <p className="truncate text-sm font-semibold text-neutral-900">
-                          {cat.name}
-                        </p>
-                      </div>
-                      {cat.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-neutral-600">
-                          {cat.description}
-                        </p>
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      {cat.image && (
+                        <img
+                          src={cat.image}
+                          alt={cat.name}
+                          className="h-12 w-12 rounded-lg object-cover border border-neutral-200 flex-shrink-0"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                          }}
+                        />
                       )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {cat.icon && <span className="text-lg">{cat.icon}</span>}
+                          <p className="truncate text-sm font-semibold text-neutral-900">
+                            {cat.name}
+                          </p>
+                        </div>
+                        {cat.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-neutral-600">
+                            {cat.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-2">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700">
