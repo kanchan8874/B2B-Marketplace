@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import Logo from '../common/Logo.jsx'
 import Button from '../common/Button.jsx'
@@ -25,12 +25,30 @@ const AdminDashboardNav = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [kycOpen, setKycOpen] = useState(false)
+  const kycDropdownRef = useRef(null)
 
   const desktopLinks = adminLinks.filter(
     (link) => link.href !== '/admin/kyc/sellers' && link.href !== '/admin/kyc/buyers',
   )
   const kycLinks = adminLinks.filter((link) => link.href.startsWith('/admin/kyc/'))
   const isKycActive = location.pathname.startsWith('/admin/kyc')
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (kycDropdownRef.current && !kycDropdownRef.current.contains(event.target)) {
+        setKycOpen(false)
+      }
+    }
+
+    if (kycOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [kycOpen])
 
   const handleProfileClick = () => {
     navigate('/admin/profile')
@@ -69,17 +87,22 @@ const AdminDashboardNav = () => {
             ))}
 
             {/* KYC dropdown for desktop */}
-            <div className="relative">
+            <div className="relative" ref={kycDropdownRef}>
               <button
                 type="button"
-                onClick={() => setKycOpen((open) => !open)}
-                onBlur={() => setTimeout(() => setKycOpen(false), 150)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setKycOpen((open) => !open)
+                }}
                 className={`${linkBaseClasses} ${
                   isKycActive ? 'text-brand-secondary border-b-2 border-brand-secondary pb-1' : 'text-neutral-700'
                 }`}
+                aria-expanded={kycOpen}
+                aria-haspopup="true"
               >
                 <span className="px-0.5">KYC</span>
-                <ChevronDown className="ml-1 h-4 w-4" aria-hidden="true" />
+                <ChevronDown className={`ml-1 h-4 w-4 transition-transform duration-200 ${kycOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>
               {kycOpen && (
                 <div className="absolute left-0 z-40 mt-2 w-56 rounded-2xl border border-neutral-200 bg-white py-2 shadow-[0_12px_30px_rgba(15,23,42,0.15)]">
@@ -87,9 +110,12 @@ const AdminDashboardNav = () => {
                     <NavLink
                       key={link.href}
                       to={link.href}
-                      onClick={() => setKycOpen(false)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setKycOpen(false)
+                      }}
                       className={({ isActive }) =>
-                        `flex w-full items-center px-4 py-2 text-sm ${
+                        `flex w-full items-center px-4 py-2 text-sm transition-colors ${
                           isActive ? 'bg-blue-50 text-brand-secondary font-semibold' : 'text-neutral-800 hover:bg-neutral-50'
                         }`
                       }

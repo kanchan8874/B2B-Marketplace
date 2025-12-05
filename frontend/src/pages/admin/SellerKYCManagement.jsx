@@ -388,7 +388,12 @@ const SellerKYCManagement = () => {
                     <div className="space-y-2">
                       {selectedKYC.documents.certificateOfIncorporation && (
                         <a
-                          href={`http://localhost:5000/${selectedKYC.documents.certificateOfIncorporation}`}
+                          href={
+                            selectedKYC.documents.certificateOfIncorporation.startsWith('http://') ||
+                            selectedKYC.documents.certificateOfIncorporation.startsWith('https://')
+                              ? selectedKYC.documents.certificateOfIncorporation
+                              : `http://localhost:5000/uploads/${selectedKYC.documents.certificateOfIncorporation}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-sm text-brand-primary hover:underline"
@@ -399,7 +404,12 @@ const SellerKYCManagement = () => {
                       )}
                       {selectedKYC.documents.gstCertificate && (
                         <a
-                          href={`http://localhost:5000/${selectedKYC.documents.gstCertificate}`}
+                          href={
+                            selectedKYC.documents.gstCertificate.startsWith('http://') ||
+                            selectedKYC.documents.gstCertificate.startsWith('https://')
+                              ? selectedKYC.documents.gstCertificate
+                              : `http://localhost:5000/uploads/${selectedKYC.documents.gstCertificate}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-sm text-brand-primary hover:underline"

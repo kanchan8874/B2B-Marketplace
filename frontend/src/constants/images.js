@@ -1,4 +1,4 @@
-/**
+ /**
  * Centralized image constants for optimized loading
  * All fallback images use Unsplash with optimized query parameters
  */

@@ -184,8 +184,40 @@ const AdminDashboard = () => {
         setSummary(summaryData || {})
         setBuyers(Array.isArray(buyersData) ? buyersData : [])
         setSellers(Array.isArray(sellersData) ? sellersData : [])
-        setProducts(Array.isArray(pendingProductsData) ? pendingProductsData : [])
-        setRfqs(Array.isArray(rfqsData) ? rfqsData : [])
+
+        // Normalize products data - extract seller and category names
+        const normalizedProducts = Array.isArray(pendingProductsData)
+          ? pendingProductsData.map((product) => ({
+              ...product,
+              id: product._id || product.id,
+              seller: typeof product.seller === 'object' && product.seller
+                ? product.seller.companyName || product.seller.name || product.seller.email || '—'
+                : product.seller || '—',
+              category: typeof product.category === 'object' && product.category
+                ? product.category.name || '—'
+                : product.category || '—',
+            }))
+          : []
+        setProducts(normalizedProducts)
+
+        // Normalize RFQs data - extract product, buyer, seller names
+        const normalizedRFQs = Array.isArray(rfqsData)
+          ? rfqsData.map((rfq) => ({
+              ...rfq,
+              id: rfq._id || rfq.id || '—',
+              product: typeof rfq.product === 'object' && rfq.product
+                ? rfq.product.name || '—'
+                : rfq.product || '—',
+              buyer: typeof rfq.buyer === 'object' && rfq.buyer
+                ? rfq.buyer.companyName || rfq.buyer.name || rfq.buyer.email || '—'
+                : rfq.buyer || '—',
+              seller: typeof rfq.seller === 'object' && rfq.seller
+                ? rfq.seller.companyName || rfq.seller.name || rfq.seller.email || '—'
+                : rfq.seller || '—',
+              created: rfq.createdAt ? new Date(rfq.createdAt).toLocaleDateString() : rfq.created || '—',
+            }))
+          : []
+        setRfqs(normalizedRFQs)
 
         // KYC data structure: { success, message, data: { kycs: [...], pagination: {...} } }
         const rawSellerKYCs = sellerKYCData?.data?.kycs || sellerKYCData?.kycs || []
@@ -387,8 +419,27 @@ const AdminDashboard = () => {
 
   const pendingProducts = useMemo(() => products, [products])
 
+  // Add error boundary check
+  if (error && !loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center" role="alert" aria-live="polite">
+          <h2 className="mb-2 text-xl font-semibold text-red-800">Error Loading Dashboard</h2>
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-6 sm:space-y-8">
       {/* KPI Overview Cards */}
       <section aria-label="Dashboard overview metrics">
         <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-neutral-900">Overview Metrics</h2>
@@ -509,6 +560,7 @@ const AdminDashboard = () => {
           />
         </Card>
       </section>
+      </div>
     </div>
   )
 }

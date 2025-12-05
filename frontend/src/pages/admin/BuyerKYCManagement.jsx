@@ -375,7 +375,12 @@ const BuyerKYCManagement = () => {
                     <div className="space-y-2">
                       {selectedKYC.documents.businessRegistration && (
                         <a
-                          href={`http://localhost:5000/${selectedKYC.documents.businessRegistration}`}
+                          href={
+                            selectedKYC.documents.businessRegistration.startsWith('http://') ||
+                            selectedKYC.documents.businessRegistration.startsWith('https://')
+                              ? selectedKYC.documents.businessRegistration
+                              : `http://localhost:5000/uploads/${selectedKYC.documents.businessRegistration}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-sm text-brand-primary hover:underline"
@@ -386,7 +391,12 @@ const BuyerKYCManagement = () => {
                       )}
                       {selectedKYC.documents.gstCertificate && (
                         <a
-                          href={`http://localhost:5000/${selectedKYC.documents.gstCertificate}`}
+                          href={
+                            selectedKYC.documents.gstCertificate.startsWith('http://') ||
+                            selectedKYC.documents.gstCertificate.startsWith('https://')
+                              ? selectedKYC.documents.gstCertificate
+                              : `http://localhost:5000/uploads/${selectedKYC.documents.gstCertificate}`
+                          }
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-sm text-brand-primary hover:underline"

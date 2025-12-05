@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, MapPin, Layers, Package, Tag, ShieldCheck } from 'lucide-react'
 import Button from '../../components/common/Button.jsx'
 import Card from '../../components/common/Card.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { getProductById } from '../../services/productService.js'
 
 const AdminProductView = () => {
