@@ -6,6 +6,8 @@ import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { listRFQs } from '../../services/rfqService.js'
 
 const ITEMS_PER_PAGE = 5
@@ -180,13 +182,13 @@ const RFQInbox = () => {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
-                          <img
-                            src={
-                              rfq.product?.images?.[0] ||
-                              'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
-                            }
+                          <OptimizedImage
+                            src={rfq.product?.images?.[0]}
                             alt={rfq.product?.name || 'Product'}
+                            fallback={FALLBACK_IMAGES.productList}
                             className="h-full w-full object-cover"
+                            loading="lazy"
+                            decoding="async"
                           />
                         </div>
                         <p className="font-semibold text-neutral-900">

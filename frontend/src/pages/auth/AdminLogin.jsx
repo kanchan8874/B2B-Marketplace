@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { adminLogin } from '../../services/authService.js'
 import useFormValidation from '../../hooks/useFormValidation.js'
@@ -13,9 +15,6 @@ const validationSchema = {
   email: [emailRule('Work email')],
   password: [passwordRule('Password')],
 }
-
-const adminIllustration =
-  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const AdminLogin = () => {
   const [showPassword, setShowPassword] = useState(false)
@@ -130,10 +129,13 @@ const AdminLogin = () => {
 
             {/* Right Column - B2B Illustration */}
             <div className="relative hidden lg:block">
-              <img
-                src={adminIllustration}
+              <OptimizedImage
+                src={FALLBACK_IMAGES.authIllustration}
                 alt="B2B admin workspace illustration"
+                fallback={FALLBACK_IMAGES.authIllustration}
                 className="h-full w-full object-cover blur-[1px]"
+                loading="eager"
+                decoding="async"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-yellow-300/35 via-blue-400/15 to-yellow-300/25 mix-blend-multiply" />
             </div>

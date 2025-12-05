@@ -4,6 +4,8 @@ import { ArrowLeft, Star, Truck, Tag, Heart, ShoppingBag, Check, MessageCircle }
 import Button from '../../components/common/Button.jsx'
 import VerifiedBadge from '../../components/common/VerifiedBadge.jsx'
 import FormField from '../../components/common/FormField.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { getProductById } from '../../services/productService.js'
 
 const ProductDetails = () => {
@@ -12,14 +14,24 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const category = useMemo(() => product?.category || null, [product])
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedSize, setSelectedSize] = useState(null)
   const [pincode, setPincode] = useState('')
 
+  // ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
+  // Reset selectedImage when product changes
+  useEffect(() => {
+    setSelectedImage(0)
+  }, [productId])
+
   useEffect(() => {
     let isMounted = true
     const load = async () => {
+      if (!productId) {
+        setError('Invalid product ID')
+        setLoading(false)
+        return
+      }
       setLoading(true)
       setError('')
       try {
@@ -45,6 +57,38 @@ const ProductDetails = () => {
     }
   }, [productId])
 
+  // Memoized values - must be called before early returns
+  const category = useMemo(() => product?.category || null, [product?.category])
+  
+  // Ensure we always have at least one image (with fallback if needed)
+  const displayImages = useMemo(() => {
+    if (!product) return [null]
+    const validImages = product.images?.filter((img) => typeof img === 'string' && img.trim()) || []
+    // If no images, add fallback so we can still show thumbnails
+    return validImages.length > 0 ? validImages : [null]
+  }, [product?.images])
+  
+  const mrp = useMemo(() => {
+    if (!product?.priceMax) return 0
+    return Math.round(product.priceMax * 1.8)
+  }, [product?.priceMax])
+  
+  const discount = useMemo(() => {
+    if (!product?.priceMin || mrp === 0) return 0
+    return Math.round(((mrp - product.priceMin) / mrp) * 100)
+  }, [product?.priceMin, mrp])
+  
+  const sizes = useMemo(() => {
+    if (!product?.moq || !product?.priceMin) return []
+    return [
+      { label: `Standard Pack (${product.moq} units)`, price: product.priceMin, value: 'standard' },
+      { label: `Bulk Pack (${product.moq * 2} units)`, price: Math.round(product.priceMin * 0.95), value: 'bulk' },
+    ]
+  }, [product?.moq, product?.priceMin])
+
+  const sellerName = product?.seller?.name || product?.seller?.companyName || 'Seller'
+
+  // Early returns AFTER all hooks
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -66,32 +110,8 @@ const ProductDetails = () => {
     )
   }
 
-  const hydratedImages =
-    product.images?.length > 0
-      ? product.images.map((img) =>
-          typeof img === 'string' && img.startsWith('http')
-            ? img
-            : 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
-        )
-      : ['https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80']
-
-  // Images to display in gallery (main + thumbnails)
-  const displayImages = hydratedImages
-  
-  // Calculate discount (mock calculation)
-  const mrp = Math.round((product.priceMax || 0) * 1.8)
-  const discount = product.priceMin ? Math.round(((mrp - product.priceMin) / mrp) * 100) : 0
-  
-  // Mock sizes for B2B products
-  const sizes = [
-    { label: `Standard Pack (${product.moq} units)`, price: product.priceMin, value: 'standard' },
-    { label: `Bulk Pack (${product.moq * 2} units)`, price: Math.round(product.priceMin * 0.95), value: 'bulk' },
-  ]
-
-  const sellerName = product.seller?.name || product.seller?.companyName || 'Seller'
-
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-7xl space-y-6">
       <button
         onClick={() => navigate(-1)}
         className="inline-flex items-center gap-2 text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors"
@@ -100,61 +120,63 @@ const ProductDetails = () => {
         Back to listing
       </button>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr,1fr]">
+      <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[1fr,1fr]">
         {/* Left Side - Large image with thumbnails below (Flipkart-style) */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Large Main Image on Top */}
-          <div className="relative w-full overflow-hidden rounded-4xl bg-neutral-100 aspect-[5/5] md:h-[800px]">
-            <img
+          <div className="relative w-full overflow-hidden rounded-2xl sm:rounded-3xl lg:rounded-4xl bg-neutral-100 aspect-square sm:aspect-[4/3] md:aspect-[5/5] md:h-[600px] lg:h-[800px]">
+            <OptimizedImage
+              key={`main-${selectedImage}-${displayImages[selectedImage] || displayImages[0]}`}
               src={displayImages[selectedImage] || displayImages[0]}
               alt={product.name}
+              fallback={FALLBACK_IMAGES.productDetail}
               className="h-full w-full object-cover transition-opacity duration-300"
-              loading="lazy"
+              loading="eager"
               decoding="async"
-              onError={(e) => {
-                e.target.src =
-                  'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80'
-              }}
             />
           </div>
 
-          {/* Thumbnails row below main image */}
-          <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
-            {displayImages.map((image, index) => (
-              <button
-                key={index}
-                type="button"
-                className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-2xl border transition-all duration-200 ${
-                  selectedImage === index
-                    ? 'border-blue-500 ring-2 ring-blue-400 ring-offset-2'
-                    : 'border-neutral-200 hover:border-neutral-400'
-                }`}
-                onClick={() => setSelectedImage(index)}
-              >
-                <img
-                  src={image}
-                  alt={`${product.name} - View ${index + 1}`}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  onError={(e) => {
-                    e.target.src =
-                      'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=400&q=80'
+          {/* Thumbnails row below main image - Always show if we have images */}
+          {displayImages.length > 0 && (
+            <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+              {displayImages.map((image, index) => (
+                <button
+                  key={`${image || 'fallback'}-${index}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setSelectedImage(index)
                   }}
-                />
-              </button>
-            ))}
-          </div>
+                  className={`relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-xl sm:rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
+                    selectedImage === index
+                      ? 'border-blue-500 ring-2 ring-blue-400 ring-offset-1 sm:ring-offset-2 scale-105'
+                      : 'border-neutral-200 hover:border-neutral-400 hover:scale-105'
+                  }`}
+                  aria-label={`View image ${index + 1} of ${displayImages.length}`}
+                >
+                  <OptimizedImage
+                    src={image}
+                    alt={`${product.name} - View ${index + 1}`}
+                    fallback={FALLBACK_IMAGES.productThumbnail}
+                    className="h-full w-full object-cover pointer-events-none"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right Side - Product Information */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-5 lg:space-y-6">
           {/* Brand & Product Name */}
           <div>
-            <p className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">
+            <p className="mb-1.5 sm:mb-2 text-xs sm:text-sm font-semibold uppercase tracking-wider text-neutral-500">
               {sellerName}
             </p>
-            <h1 className="text-2xl font-bold text-neutral-900 leading-tight mb-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-neutral-900 leading-tight mb-2">
               {product.name}
             </h1>
             <div className="flex items-center gap-2">
@@ -167,21 +189,21 @@ const ProductDetails = () => {
           </div>
 
           {/* Pricing */}
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-neutral-900">
-                ₹{product.priceMin?.toLocaleString?.() ?? '-'}
+          <div className="space-y-1.5 sm:space-y-2">
+            <div className="flex flex-wrap items-baseline gap-2 sm:gap-3">
+              <span className="text-2xl sm:text-3xl font-bold text-neutral-900">
+                ₹{product.priceMin ? product.priceMin.toLocaleString() : '-'}
               </span>
-              {product.priceMax && (
+              {product.priceMax && mrp > 0 && discount > 0 && (
                 <>
-                  <span className="text-lg text-neutral-500 line-through">
+                  <span className="text-base sm:text-lg text-neutral-500 line-through">
                     ₹{mrp.toLocaleString()}
                   </span>
-                  <span className="text-sm font-semibold text-emerald-600">({discount}% OFF)</span>
+                  <span className="text-xs sm:text-sm font-semibold text-emerald-600">({discount}% OFF)</span>
                 </>
               )}
             </div>
-            <p className="text-xs text-neutral-500">inclusive of all taxes</p>
+            <p className="text-xs text-neutral-500">Inclusive of all taxes</p>
           </div>
 
           {/* Product Description */}
@@ -195,34 +217,36 @@ const ProductDetails = () => {
           )}
 
           {/* Size Selection */}
-          <div className="space-y-3">
-            <p className="text-sm font-semibold text-neutral-700">SELECT SIZE</p>
-            <div className="flex flex-wrap gap-3">
-              {sizes.map((size) => (
-                <button
-                  key={size.value}
-                  onClick={() => setSelectedSize(size.value)}
-                  className={`px-4 py-2.5 rounded-lg border-2 font-semibold text-sm transition-all ${
-                    selectedSize === size.value
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400'
-                  }`}
-                >
-                  {size.label} - ₹{size.price.toLocaleString()}
-                </button>
-              ))}
+          {sizes.length > 0 && (
+            <div className="space-y-2 sm:space-y-3">
+              <p className="text-xs sm:text-sm font-semibold text-neutral-700">SELECT SIZE</p>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                {sizes.map((size) => (
+                  <button
+                    key={size.value}
+                    onClick={() => setSelectedSize(size.value)}
+                    className={`px-4 py-2.5 rounded-lg border-2 font-semibold text-sm transition-all ${
+                      selectedSize === size.value
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-neutral-300 bg-white text-neutral-700 hover:border-neutral-400'
+                    }`}
+                  >
+                    {size.label} - ₹{size.price ? size.price.toLocaleString() : '-'}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Button
               onClick={() => navigate(`/buyer/rfq/${product._id}`)}
               size="lg"
               className="flex-1 flex items-center justify-center gap-2"
             >
-              <ShoppingBag className="h-5 w-5" />
-              Send RFQ
+              <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm sm:text-base">Send RFQ</span>
             </Button>
             <Button
               onClick={() => navigate(`/buyer/messages/contact?productId=${product._id}`)}
@@ -230,8 +254,8 @@ const ProductDetails = () => {
               size="lg"
               className="flex-1 flex items-center justify-center gap-2"
             >
-              <MessageCircle className="h-5 w-5" />
-              Contact Seller
+              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="text-sm sm:text-base">Contact Seller</span>
             </Button>
           </div>
 

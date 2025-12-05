@@ -43,15 +43,7 @@ const AdminProductView = () => {
   }, [productId])
 
   const images = useMemo(() => {
-    if (!product?.images || product.images.length === 0) {
-      return [
-        'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
-      ]
-    }
-    return product.images.map((img) => {
-      if (typeof img === 'string' && img.trim()) return img
-      return 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80'
-    })
+    return product?.images?.filter((img) => typeof img === 'string' && img.trim()) || []
   }, [product])
 
   if (loading) {
@@ -100,14 +92,13 @@ const AdminProductView = () => {
       <section className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
         <div className="relative">
           <div className="aspect-square overflow-hidden rounded-4xl bg-neutral-100 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
-            <img
+            <OptimizedImage
               src={images[selectedImage] || images[0]}
               alt={product.name}
+              fallback={FALLBACK_IMAGES.productDetail}
               className="h-full w-full object-cover"
-              onError={(e) => {
-                e.target.src =
-                  'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=1200&q=80'
-              }}
+              loading="lazy"
+              decoding="async"
             />
           </div>
 
@@ -115,16 +106,28 @@ const AdminProductView = () => {
             <div className="mt-3 flex gap-2 overflow-x-auto">
               {images.map((img, index) => (
                 <button
-                  key={img + index}
+                  key={img || index}
                   type="button"
-                  onClick={() => setSelectedImage(index)}
-                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-2 transition-all ${
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setSelectedImage(index)
+                  }}
+                  className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border-2 transition-all duration-200 cursor-pointer ${
                     selectedImage === index
-                      ? 'border-blue-600 shadow-[0_0_0_1px_rgba(37,99,235,0.45)]'
-                      : 'border-neutral-200 hover:border-blue-400'
+                      ? 'border-blue-600 shadow-[0_0_0_1px_rgba(37,99,235,0.45)] ring-2 ring-blue-400/30 ring-offset-1 scale-105'
+                      : 'border-neutral-200 hover:border-blue-400 hover:scale-105'
                   }`}
+                  aria-label={`View image ${index + 1} of ${images.length}`}
                 >
-                  <img src={img} alt="Thumbnail" className="h-full w-full object-cover" />
+                  <OptimizedImage
+                    src={img}
+                    alt="Thumbnail"
+                    fallback={FALLBACK_IMAGES.productThumbnail}
+                    className="h-full w-full object-cover pointer-events-none"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </button>
               ))}
             </div>

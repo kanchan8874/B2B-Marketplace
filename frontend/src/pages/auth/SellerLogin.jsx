@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, Phone, Eye, EyeOff, Lock } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { login, sendOtp, verifyOtp } from '../../services/authService.js'
 import {
@@ -31,9 +33,6 @@ const emailOtpSchema = {
   otpEmail: [emailRule('Email address')],
   otp: [otpRule('OTP')],
 }
-
-const sellerIllustration =
-  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const SellerLogin = () => {
   const [mode, setMode] = useState('password')
@@ -391,13 +390,13 @@ const SellerLogin = () => {
 
             {/* Right Column - B2B Seller Illustration */}
             <div className="relative hidden lg:block min-h-[620px] bg-gradient-to-br from-emerald-100 via-blue-50 to-yellow-50">
-              <img
-                src={sellerIllustration}
+              <OptimizedImage
+                src={FALLBACK_IMAGES.authIllustration}
                 alt="Sellers collaborating on product catalog and RFQs"
+                fallback={FALLBACK_IMAGES.authIllustration}
                 className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.target.style.display = 'none'
-                }}
+                loading="eager"
+                decoding="async"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/30 via-blue-500/15 to-yellow-300/25 mix-blend-multiply" />
             </div>

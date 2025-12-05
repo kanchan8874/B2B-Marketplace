@@ -1,12 +1,12 @@
 import Button from '../components/common/Button.jsx'
+import OptimizedImage from '../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../constants/images.js'
 
 const stats = [
   { label: 'Verified suppliers', value: '1,200+' },
   { label: 'Buyer orgs onboarded', value: '480+' },
   { label: 'RFQs processed', value: '18k+' },
 ]
-
-const heroImage = 'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1920&q=90'
 
 const PublicLayout = () => (
 <section
@@ -15,10 +15,13 @@ const PublicLayout = () => (
 >
   {/* Full Width Background Image */}
   <div className="absolute inset-0 w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]">
-    <img
-      src={heroImage}
+    <OptimizedImage
+      src={FALLBACK_IMAGES.authHero}
       alt=""
+      fallback={FALLBACK_IMAGES.authHero}
       className="h-full w-full object-cover"
+      loading="eager"
+      decoding="async"
       aria-hidden="true"
     />
   </div>

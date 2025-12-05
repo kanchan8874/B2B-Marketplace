@@ -53,13 +53,13 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
-            Catalogue basics
+            Catalogue Basics
           </p>
           <FormField
             id="name"
             name="name"
-            label="Product name"
-            placeholder="e.g. Industrial Safety Helmets"
+            label="Product Name"
+            placeholder="e.g., Industrial Safety Helmets"
             required
             value={values.name}
             onChange={handleChange}
@@ -105,7 +105,7 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
             <FormField
               id="priceMin"
               name="priceMin"
-              label="Price min (₹)"
+              label="Price Min (₹)"
               required
               type="number"
               value={values.priceMin}
@@ -116,7 +116,7 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
             <FormField
               id="priceMax"
               name="priceMax"
-              label="Price max (₹)"
+              label="Price Max (₹)"
               required
               type="number"
               value={values.priceMax}
@@ -128,7 +128,7 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
           <FormField
             id="moq"
             name="moq"
-            label="MOQ (units)"
+            label="MOQ (Units)"
             required
             type="number"
             value={values.moq}
@@ -139,7 +139,7 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
           <FormField
             id="priceValidityDate"
             name="priceValidityDate"
-            label="Price validity date"
+            label="Price Validity Date"
             type="date"
             value={values.priceValidityDate}
             onChange={handleChange}
@@ -154,13 +154,13 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
         <FormField
           id="paymentTerms"
           name="paymentTerms"
-          label="Standard payment terms"
+          label="Standard Payment Terms"
           as="select"
           value={values.paymentTerms}
           onChange={handleChange}
           onBlur={handleBlur}
         >
-          <option value="">Select payment terms</option>
+          <option value="">Select Payment Terms</option>
           <option value="Net 15">Net 15</option>
           <option value="Net 30">Net 30</option>
           <option value="Net 45">Net 45</option>
@@ -172,13 +172,13 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
         <FormField
           id="shipmentMode"
           name="shipmentMode"
-          label="Standard shipment mode"
+          label="Standard Shipment Mode"
           as="select"
           value={values.shipmentMode}
           onChange={handleChange}
           onBlur={handleBlur}
         >
-          <option value="">Select shipment mode</option>
+          <option value="">Select Shipment Mode</option>
           <option value="Road">Road</option>
           <option value="Rail">Rail</option>
           <option value="Air">Air</option>
@@ -191,7 +191,7 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
       <FormField
         id="description"
         name="description"
-        label="Product description"
+        label="Product Description"
         as="textarea"
         rows={4}
         value={values.description}
@@ -204,13 +204,13 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
       <div className="grid gap-4 md:grid-cols-[1.1fr,0.9fr]">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
-            Inventory & logistics
+            Inventory & Logistics
           </p>
           <div className="grid gap-2.5 sm:grid-cols-2">
             <FormField
               id="sku"
               name="sku"
-              label="SKU (internal)"
+              label="SKU (Internal)"
               placeholder="Optional — for your tracking"
               value={values.sku}
               onChange={handleChange}
@@ -219,7 +219,7 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
             <FormField
               id="stock"
               name="stock"
-              label="Available stock"
+              label="Available Stock"
               type="number"
               value={values.stock}
               onChange={handleChange}
@@ -230,8 +230,8 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
           <FormField
             id="location"
             name="location"
-            label="Dispatch city / state"
-            placeholder="e.g. Ahmedabad, Gujarat"
+            label="Dispatch City / State"
+            placeholder="e.g., Ahmedabad, Gujarat"
             required
             value={values.location}
             onChange={handleChange}
@@ -242,23 +242,23 @@ const ProductForm = ({ onSubmit, submitLabel, categories = [], initialValues }) 
 
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-500">
-            Media upload
+            Media Upload
           </p>
           <MediaUploader onChange={setMediaFiles} />
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-3 border-t border-neutral-100 pt-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-neutral-100 pt-4">
         <Button
           type="button"
           variant="secondary"
           size="lg"
-          className="rounded-full px-6"
+          className="rounded-full px-6 w-full sm:w-auto"
           onClick={resetForm}
         >
           Cancel
         </Button>
-        <Button type="submit" size="lg" className="rounded-full px-8">
+        <Button type="submit" size="lg" className="rounded-full px-8 w-full sm:w-auto">
           {submitLabel}
         </Button>
       </div>

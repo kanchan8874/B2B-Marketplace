@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom'
 import Card from '../../components/common/Card.jsx'
 import RFQResponseForm from '../../components/seller/RFQResponseForm.jsx'
 import StatusTag from '../../components/common/StatusTag.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { getRFQById } from '../../services/rfqService.js'
 
 const RFQResponse = () => {
@@ -116,10 +118,13 @@ const RFQResponse = () => {
           {/* Large product image on the right */}
           <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-neutral-100">
             {mainImage ? (
-              <img
+              <OptimizedImage
                 src={mainImage}
                 alt={product?.name || 'Product'}
+                fallback={FALLBACK_IMAGES.productDetail}
                 className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   // Hide broken images to avoid showing broken icon
                   e.target.style.display = 'none'

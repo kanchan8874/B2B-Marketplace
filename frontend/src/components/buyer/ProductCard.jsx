@@ -2,34 +2,26 @@ import PropTypes from 'prop-types'
 import { Link } from 'react-router-dom'
 import Button from '../common/Button.jsx'
 import VerifiedBadge from '../common/VerifiedBadge.jsx'
-
-const fallbackImages = {
-  'Food & Agriculture': 'https://images.unsplash.com/photo-1511690743698-d9d85f2fbf38?auto=format&fit=crop&w=900&q=80',
-  'Health & Pharma': 'https://images.unsplash.com/photo-1580281780460-82d277b0c30d?auto=format&fit=crop&w=900&q=80',
-  Packaging: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=900&q=80',
-  'Industrial Supplies': 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=900&q=80',
-}
+import OptimizedImage from '../common/OptimizedImage.jsx'
+import { getFallbackImage } from '../../constants/images.js'
 
 const resolveImage = (product) => {
   const candidate = product.gallery?.[0]
   if (candidate && candidate.startsWith('http')) return candidate
   if (candidate) return `${candidate}`
-  return fallbackImages[product.categoryLabel] || 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
+  return null
 }
 
 const ProductCard = ({ product }) => (
   <article className="flex h-full flex-col overflow-hidden rounded-[32px] border border-blue-100 bg-gradient-to-br from-blue-50/60 via-white/95 to-teal-50/60 shadow-[0_20px_55px_rgba(37,99,235,0.16)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_30px_80px_rgba(37,99,235,0.24)]">
     <div className="relative overflow-hidden rounded-[28px] border border-white/60 bg-neutral-100 mx-3 mt-3">
-      <img
+      <OptimizedImage
         src={resolveImage(product)}
         alt={product.name}
+        fallbackCategory={product.categoryLabel}
         className="h-44 w-full object-cover transition duration-300 ease-out group-hover:scale-105"
         loading="lazy"
-        onError={(event) => {
-          event.currentTarget.src =
-            fallbackImages[product.categoryLabel] ||
-            'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-        }}
+        decoding="async"
       />
       <div className="absolute left-4 top-4 inline-flex items-center rounded-full bg-black/55 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white">
         {product.categoryLabel}

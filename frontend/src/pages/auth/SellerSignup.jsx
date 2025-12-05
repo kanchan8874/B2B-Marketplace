@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import useFormValidation from '../../hooks/useFormValidation.js'
 import { signup } from '../../services/authService.js'
 import {
@@ -33,9 +35,6 @@ const validationSchema = {
   sellerPassword: [passwordRule('Password')],
   sellerGst: [gst('GST number')],
 }
-
-const sellerIllustration =
-  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const SellerSignup = () => {
   const [submitting, setSubmitting] = useState(false)
@@ -98,15 +97,15 @@ const SellerSignup = () => {
         <div className="relative rounded-4xl bg-white shadow-[0_0_0_1px_rgba(15,98,254,0.1),0_2px_8px_rgba(15,98,254,0.12),0_4px_16px_rgba(15,98,254,0.08)] overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-neutral-100/80">
             {/* Left Column - Signup Form */}
-            <div className="p-6 lg:p-8 lg:min-h-[600px] flex flex-col justify-center">
+            <div className="p-4 sm:p-6 lg:p-8 lg:min-h-[600px] flex flex-col justify-center">
               {/* Section Header */}
               <div className="mb-5">
-                <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Seller registration</h2>
+                <h2 className="text-base font-bold text-neutral-900 mb-1 tracking-tight">Seller Registration</h2>
                 <p className="text-xs text-neutral-600 font-medium">Submit your business details for approval.</p>
               </div>
 
               {successMessage && (
-                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="alert" aria-live="polite">
                   {successMessage}
                 </div>
               )}
@@ -201,23 +200,26 @@ const SellerSignup = () => {
                 />
 
                 {submitError && (
-                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+                  <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
                     {submitError}
                   </div>
                 )}
                 
                 <Button type="submit" size="md" className="w-full mt-2" disabled={submitting}>
-                  {submitting ? 'Submitting...' : 'Submit for approval'}
+                  {submitting ? 'Submitting...' : 'Submit for Approval'}
                 </Button>
               </form>
             </div>
 
             {/* Right Column - B2B Illustration */}
             <div className="relative hidden lg:block">
-              <img
-                src={sellerIllustration}
+              <OptimizedImage
+                src={FALLBACK_IMAGES.authIllustration}
                 alt="B2B sellers managing their marketplace presence"
+                fallback={FALLBACK_IMAGES.authIllustration}
                 className="h-full w-full object-cover blur-[1px]"
+                loading="eager"
+                decoding="async"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/35 via-emerald-400/15 to-yellow-300/25 mix-blend-multiply" />
             </div>

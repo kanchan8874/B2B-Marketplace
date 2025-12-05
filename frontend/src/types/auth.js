@@ -1,1 +1,0 @@
-// Auth-related types placeholder.

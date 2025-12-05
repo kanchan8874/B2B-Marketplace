@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import OptimizedImage from '../common/OptimizedImage.jsx'
 
 const CategoryGrid = ({ items, onSelect }) => (
   // Responsive grid – clean, card-style layout
@@ -15,10 +16,13 @@ const CategoryGrid = ({ items, onSelect }) => (
           {/* Background image */}
           <div className="relative h-full w-full overflow-hidden">
             {categoryImage ? (
-              <img
+              <OptimizedImage
                 src={categoryImage}
                 alt={category.name}
+                fallback={null}
                 className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 saturate-115 contrast-110 brightness-105"
+                loading="lazy"
+                decoding="async"
                 onError={(e) => {
                   e.target.style.display = 'none'
                 }}

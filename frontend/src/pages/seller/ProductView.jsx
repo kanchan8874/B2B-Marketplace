@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Edit3, MapPin, Layers, Package, Tag } from 'lucide-react'
 import Button from '../../components/common/Button.jsx'
 import Card from '../../components/common/Card.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { getProductById } from '../../services/productService.js'
 
 const SellerProductView = () => {
@@ -39,20 +41,9 @@ const SellerProductView = () => {
     }
   }, [productId])
 
-  const hydratedImages = useMemo(() => {
-    if (!product?.images?.length) {
-      return [
-        'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
-      ]
-    }
-    return product.images.map((img) =>
-      typeof img === 'string' && img.startsWith('http')
-        ? img
-        : 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80',
-    )
+  const displayImages = useMemo(() => {
+    return product?.images?.filter((img) => typeof img === 'string' && img.trim()) || []
   }, [product])
-
-  const displayImages = hydratedImages
 
   if (loading) {
     return (
@@ -106,14 +97,13 @@ const SellerProductView = () => {
         {/* Left: image gallery */}
         <div className="relative">
           <div className="aspect-square overflow-hidden rounded-4xl bg-neutral-100 shadow-[0_18px_45px_rgba(15,23,42,0.16)]">
-            <img
+            <OptimizedImage
               src={displayImages[selectedImage] || displayImages[0]}
               alt={product.name}
+              fallback={FALLBACK_IMAGES.productDetail}
               className="h-full w-full object-cover"
-              onError={(e) => {
-                e.target.src =
-                  'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=1200&q=80'
-              }}
+              loading="lazy"
+              decoding="async"
             />
           </div>
 
@@ -125,13 +115,16 @@ const SellerProductView = () => {
                   <button
                     key={index}
                     type="button"
-                    className={`h-2.5 w-2.5 rounded-full border border-white/60 transition-all ${
-                      selectedImage === index ? 'bg-white shadow-sm scale-110' : 'bg-white/30'
+                    className={`h-2.5 w-2.5 rounded-full border border-white/60 transition-all cursor-pointer ${
+                      selectedImage === index ? 'bg-white shadow-sm scale-110' : 'bg-white/30 hover:bg-white/50'
                     }`}
-                    onClick={() => setSelectedImage(index)}
-                    aria-label={`View image ${index + 1}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setSelectedImage(index)
+                    }}
+                    aria-label={`View image ${index + 1} of ${displayImages.length}`}
                     aria-pressed={selectedImage === index}
-                    // allow click but keep wrapper pointer-events-none
                     style={{ pointerEvents: 'auto' }}
                   />
                 ))}

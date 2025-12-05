@@ -36,5 +36,3 @@ export default {
   createCategory,
   updateCategory,
 }
-
-// Category API integration placeholder.

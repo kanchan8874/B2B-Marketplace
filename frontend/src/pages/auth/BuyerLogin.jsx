@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Mail, Phone, Eye, EyeOff, Lock } from 'lucide-react'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { useAuth } from '../../hooks/useAuth.js'
 import { login, sendOtp, verifyOtp } from '../../services/authService.js'
 import {
@@ -31,9 +33,6 @@ const emailOtpSchema = {
   otpEmail: [emailRule('Email address')],
   otp: [otpRule('OTP')],
 }
-
-const buyerIllustration =
-  'https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80'
 
 const BuyerLogin = () => {
   const [mode, setMode] = useState('password')
@@ -398,9 +397,12 @@ const BuyerLogin = () => {
             {/* Right Column - B2B Illustration */}
             <div className="relative hidden lg:block">
               <img
-                src={buyerIllustration}
+                src={FALLBACK_IMAGES.authIllustration}
                 alt="B2B buyers collaborating in a digital marketplace workspace"
+                fallback={FALLBACK_IMAGES.authIllustration}
                 className="h-full w-full object-cover blur-[1px]"
+                loading="eager"
+                decoding="async"
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/35 via-emerald-400/15 to-yellow-300/25 mix-blend-multiply" />
             </div>

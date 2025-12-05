@@ -388,17 +388,17 @@ const AdminDashboard = () => {
   const pendingProducts = useMemo(() => products, [products])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* KPI Overview Cards */}
-      <section>
-        <h2 className="mb-4 text-xl font-semibold text-neutral-900">Overview Metrics</h2>
+      <section aria-label="Dashboard overview metrics">
+        <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-semibold text-neutral-900">Overview Metrics</h2>
         {error && (
-          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
             {error}
           </div>
         )}
         <div className="rounded-3xl border border-neutral-300/80 bg-white/80 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             {loading
               ? Array.from({ length: 5 }).map((_, index) => (
                   <div
@@ -412,7 +412,7 @@ const AdminDashboard = () => {
 
           {/* Secondary KPI row */}
           {!loading && (
-            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="mt-4 sm:mt-5 grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
               {kpisSecondary.map((kpi) => (
                 <KPICard key={kpi.label} {...kpi} />
               ))}
@@ -422,21 +422,21 @@ const AdminDashboard = () => {
       </section>
 
       {/* KYC queues section (replaces User Management lists) */}
-      <section>
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-neutral-900">KYC queues</h2>
-          <div className="flex gap-3">
-            <Button as={Link} to="/admin/kyc/sellers" variant="ghost" size="sm">
+      <section aria-label="KYC queues">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h2 className="text-lg sm:text-xl font-semibold text-neutral-900">KYC Queues</h2>
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            <Button as={Link} to="/admin/kyc/sellers" variant="ghost" size="sm" className="text-xs sm:text-sm">
               Open Seller KYC
             </Button>
-            <Button as={Link} to="/admin/kyc/buyers" variant="ghost" size="sm">
+            <Button as={Link} to="/admin/kyc/buyers" variant="ghost" size="sm" className="text-xs sm:text-sm">
               Open Buyer KYC
             </Button>
           </div>
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
           <Card
-            title="Seller KYC queue"
+            title="Seller KYC Queue"
             subtitle={`Showing latest ${Math.min(5, sellerKYCQueue.length)} of ${sellerKYCQueue.length} seller KYC submissions`}
             className="border border-amber-200/70"
           >
@@ -450,7 +450,7 @@ const AdminDashboard = () => {
             </div>
           </Card>
           <Card
-            title="Buyer KYC queue"
+            title="Buyer KYC Queue"
             subtitle={`Showing latest ${Math.min(5, buyerKYCQueue.length)} of ${buyerKYCQueue.length} buyer KYC submissions`}
             className="border border-sky-200/70"
           >
@@ -467,15 +467,15 @@ const AdminDashboard = () => {
       </section>
 
       {/* Product approvals Section */}
-      <section>
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-neutral-900">Product approvals</h2>
-          <Button as={Link} to="/admin/products" variant="ghost" size="sm">
+      <section aria-label="Product approvals">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h2 className="text-lg sm:text-xl font-semibold text-neutral-900">Product Approvals</h2>
+          <Button as={Link} to="/admin/products" variant="ghost" size="sm" className="text-xs sm:text-sm">
             Open Products Management
           </Button>
         </div>
         <Card
-          title="Pending approval products"
+          title="Pending Approval Products"
           subtitle={`Showing latest ${Math.min(5, pendingProducts.length)} of ${pendingProducts.length} products awaiting review`}
           className="border-2 border-status-warning/20"
         >
@@ -487,15 +487,15 @@ const AdminDashboard = () => {
       </section>
 
       {/* RFQs needing action Section */}
-      <section>
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-neutral-900">RFQs needing action</h2>
-          <Button as={Link} to="/admin/rfqs" variant="ghost" size="sm">
+      <section aria-label="RFQs needing action">
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h2 className="text-lg sm:text-xl font-semibold text-neutral-900">RFQs Needing Action</h2>
+          <Button as={Link} to="/admin/rfqs" variant="ghost" size="sm" className="text-xs sm:text-sm">
             Open RFQ Monitor
           </Button>
         </div>
         <Card
-          title="Open RFQs awaiting response"
+          title="Open RFQs Awaiting Response"
           subtitle={`Showing latest ${Math.min(
             5,
             rfqs.filter((r) => r.status === 'Awaiting response').length

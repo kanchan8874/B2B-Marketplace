@@ -298,12 +298,14 @@ const UserManagement = ({ scope }) => {
   return (
     <div className="space-y-0">
       {/* Tabs */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="inline-flex rounded-t-2xl border border-blue-100 bg-white/90 p-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="inline-flex rounded-t-2xl border border-blue-100 bg-white/90 p-1 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setActiveTab('buyer')}
-            className={`min-w-[120px] rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+            aria-selected={!isSellers}
+            role="tab"
+            className={`flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${
               !isSellers
                 ? 'bg-gradient-to-r from-blue-300 to-sky-300 text-black'
                 : 'text-neutral-600 hover:bg-blue-50'
@@ -314,7 +316,9 @@ const UserManagement = ({ scope }) => {
           <button
             type="button"
             onClick={() => setActiveTab('seller')}
-            className={`min-w-[120px] rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+            aria-selected={isSellers}
+            role="tab"
+            className={`flex-1 sm:flex-none min-w-[100px] sm:min-w-[120px] rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition-all ${
               isSellers
                 ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-black'
                 : 'text-neutral-600 hover:bg-emerald-50'
@@ -323,7 +327,7 @@ const UserManagement = ({ scope }) => {
             Sellers
           </button>
         </div>
-        <div className="hidden text-xs text-neutral-500 sm:block">
+        <div className="text-xs text-neutral-500 w-full sm:w-auto text-left sm:text-right">
           {isSellers
             ? `${sellers.length} sellers • ${sellers.filter((s) => s.status === 'Pending').length} pending approvals`
             : `${buyers.length} active buyers`}
@@ -331,38 +335,39 @@ const UserManagement = ({ scope }) => {
       </div>
 
       <Card
-        title={isSellers ? 'Seller accounts' : 'Buyer accounts'}
+        title={isSellers ? 'Seller Accounts' : 'Buyer Accounts'}
         subtitle={
           isSellers
             ? 'Review, approve, or block seller organisations.'
             : 'Monitor verified buying organisations on the marketplace.'
         }
-        className="rounded-tl-none"
+        className="rounded-tl-none rounded-2xl sm:rounded-3xl"
       >
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <FormField
             id="userSearch"
             name="userSearch"
-            label={`Search ${isSellers ? 'sellers' : 'buyers'}`}
+            label={`Search ${isSellers ? 'Sellers' : 'Buyers'}`}
             type="text"
             placeholder="Search by name, email, or location..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             icon={Search}
+            aria-label={`Search ${isSellers ? 'sellers' : 'buyers'}`}
           />
         </div>
         {error && (
-          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
             {error}
           </div>
         )}
         {loading ? (
-          <div className="py-10 text-center text-sm text-neutral-600">Loading users...</div>
+          <div className="py-10 text-center text-sm text-neutral-600" aria-live="polite">Loading users...</div>
         ) : (
           <DataTable columns={columns} data={paginatedData} />
         )}
         {!loading && filteredData.length === 0 && (
-          <div className="py-12 text-center">
+          <div className="py-12 text-center" role="status" aria-live="polite">
             <Users className="mx-auto mb-4 h-12 w-12 text-neutral-300" aria-hidden="true" />
             <p className="text-sm text-neutral-500">No {isSellers ? 'sellers' : 'buyers'} found matching your search.</p>
           </div>

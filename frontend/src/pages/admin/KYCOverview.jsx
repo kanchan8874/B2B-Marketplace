@@ -1,27 +1,65 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Users, Store, CheckCircle, Clock, ArrowRight } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
-
-// Mock data - in real app, this would come from API
-const sellerKYCStats = {
-  pending: 5,
-  approved: 12,
-  rejected: 2,
-}
-
-const buyerKYCStats = {
-  pending: 3,
-  approved: 8,
-  rejected: 1,
-}
+import { getPendingSellerKYCs, getPendingBuyerKYCs } from '../../services/kycService.js'
 
 const KYCOverview = () => {
+  const [sellerKYCStats, setSellerKYCStats] = useState({ pending: 0, approved: 0, rejected: 0 })
+  const [buyerKYCStats, setBuyerKYCStats] = useState({ pending: 0, approved: 0, rejected: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadKYCStats = async () => {
+      try {
+        const [sellerPending, sellerAll, buyerPending, buyerAll] = await Promise.all([
+          getPendingSellerKYCs('Pending', 1, 1),
+          getPendingSellerKYCs('All', 1, 1000),
+          getPendingBuyerKYCs('Pending', 1, 1),
+          getPendingBuyerKYCs('All', 1, 1000),
+        ])
+
+        const sellerData = sellerAll.data || []
+        const buyerData = buyerAll.data || []
+
+        setSellerKYCStats({
+          pending: sellerPending.total || 0,
+          approved: sellerData.filter((k) => k.status === 'Approved').length,
+          rejected: sellerData.filter((k) => k.status === 'Rejected').length,
+        })
+
+        setBuyerKYCStats({
+          pending: buyerPending.total || 0,
+          approved: buyerData.filter((k) => k.status === 'Approved').length,
+          rejected: buyerData.filter((k) => k.status === 'Rejected').length,
+        })
+      } catch (error) {
+        console.error('Failed to load KYC stats:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadKYCStats()
+  }, [])
+
   const totalSellerKYC = sellerKYCStats.pending + sellerKYCStats.approved + sellerKYCStats.rejected
   const totalBuyerKYC = buyerKYCStats.pending + buyerKYCStats.approved + buyerKYCStats.rejected
   const verificationHealth = totalSellerKYC + totalBuyerKYC > 0 
     ? Math.round(((sellerKYCStats.approved + buyerKYCStats.approved) / (totalSellerKYC + totalBuyerKYC)) * 100)
     : 0
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-sm text-neutral-600">Loading KYC statistics...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">

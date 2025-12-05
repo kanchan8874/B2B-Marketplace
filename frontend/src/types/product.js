@@ -1,1 +1,0 @@
-// Product-related types placeholder.

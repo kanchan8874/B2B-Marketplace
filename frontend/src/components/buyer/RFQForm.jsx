@@ -74,26 +74,26 @@ const RFQForm = ({ product }) => {
 
   if (submitted) {
     return (
-      <div className="space-y-4 rounded-3xl border border-status-success/50 bg-status-success/5 p-6 text-center text-status-success">
-        <p className="font-semibold">RFQ sent successfully. The seller will reach out shortly.</p>
+      <div className="space-y-4 rounded-2xl sm:rounded-3xl border border-status-success/50 bg-status-success/5 p-4 sm:p-6 text-center text-status-success" role="alert" aria-live="polite">
+        <p className="font-semibold text-sm sm:text-base">RFQ sent successfully. The seller will reach out shortly.</p>
         <Button
           size="md"
           variant="secondary"
-          className="rounded-full"
+          className="rounded-full text-xs sm:text-sm"
           onClick={() => navigate('/buyer/rfqs')}
         >
-          View all RFQs
+          View All RFQs
         </Button>
       </div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6" aria-label={`Send RFQ for ${product?.name || 'product'}`} noValidate>
+    <form onSubmit={onSubmit} className="space-y-4 sm:space-y-6" aria-label={`Send RFQ for ${product?.name || 'product'}`} noValidate>
       <FormField
         id="quantity"
         name="quantity"
-        label="Required quantity"
+        label="Required Quantity"
         required
         type="number"
         value={values.quantity}
@@ -105,18 +105,19 @@ const RFQForm = ({ product }) => {
       <FormField
         id="location"
         name="location"
-        label="Delivery location"
+        label="Delivery Location"
         required
         value={values.location}
         onChange={handleChange}
         onBlur={handleBlur}
-        placeholder="City, State or Pincode"
+        placeholder="City, State, or Pincode"
+        helper="Enter city, state, or postal code"
         error={errors.location}
       />
       <FormField
         id="notes"
         name="notes"
-        label="Additional notes"
+        label="Additional Notes"
         as="textarea"
         rows={4}
         value={values.notes}
@@ -126,11 +127,11 @@ const RFQForm = ({ product }) => {
         error={errors.notes}
       />
       {submitError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
           {submitError}
         </div>
       )}
-      <Button type="submit" size="lg" className="w-full">
+      <Button type="submit" size="lg" className="w-full text-sm sm:text-base">
         {submitting ? 'Sending...' : 'Send RFQ'}
       </Button>
     </form>

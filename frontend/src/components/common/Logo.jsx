@@ -8,6 +8,10 @@ const Logo = ({ compact = false }) => {
         src={logoImage}
         alt="B2B Marketplace Logo"
         className="h-14 w-auto object-contain"
+        loading="eager"
+        decoding="async"
+        width="auto"
+        height="56"
       />
     )
   }
@@ -17,6 +21,10 @@ const Logo = ({ compact = false }) => {
       src={logoImage}
       alt="B2B Marketplace Logo"
       className="h-12 w-auto object-contain"
+      loading="eager"
+      decoding="async"
+      width="auto"
+      height="48"
     />
   )
 }

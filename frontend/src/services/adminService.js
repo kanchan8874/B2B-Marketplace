@@ -95,5 +95,3 @@ export default {
   updateUserApproval,
   updateSellerSubscriptionTier,
 }
-
-// Admin API integration placeholder.

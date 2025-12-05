@@ -7,13 +7,22 @@ import StatusTag from '../../components/common/StatusTag.jsx'
 import Button from '../../components/common/Button.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Pagination from '../../components/common/Pagination.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { listProducts, updateProductStatusAdmin } from '../../services/productService.js'
 
 const renderProductCell = (row) => (
   <div className="flex items-center gap-3">
     <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-100">
       {row.images && row.images[0] ? (
-        <img src={row.images[0]} alt={row.name} className="h-full w-full object-cover" />
+        <OptimizedImage
+          src={row.images[0]}
+          alt={row.name}
+          fallback={FALLBACK_IMAGES.productList}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <span className="text-xs font-semibold text-neutral-500">{row.name?.charAt(0)}</span>
       )}
@@ -231,30 +240,32 @@ const ProductModeration = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-surface-border">
+      <div className="flex gap-2 border-b border-surface-border overflow-x-auto" role="tablist" aria-label="Product moderation tabs">
         <button
           onClick={() => handleTabChange('all')}
-          className={`px-4 py-2 text-sm font-semibold transition ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
             activeTab === 'all'
               ? 'border-b-2 border-brand-primary text-brand-primary'
               : 'text-neutral-600 hover:text-neutral-900'
           }`}
           aria-selected={activeTab === 'all'}
           role="tab"
+          aria-controls="all-products-panel"
         >
           All Products ({allProducts.length})
         </button>
         <button
           onClick={() => handleTabChange('pending')}
-          className={`px-4 py-2 text-sm font-semibold transition ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-semibold transition whitespace-nowrap ${
             activeTab === 'pending'
               ? 'border-b-2 border-brand-primary text-brand-primary'
               : 'text-neutral-600 hover:text-neutral-900'
           }`}
           aria-selected={activeTab === 'pending'}
           role="tab"
+          aria-controls="pending-products-panel"
         >
           Pending Approvals ({pendingProducts.length})
         </button>
@@ -265,29 +276,30 @@ const ProductModeration = () => {
         <Card
           title="All Products"
           subtitle={`${allProducts.length} total products • ${pendingProducts.length} pending approval`}
-          className="bg-gradient-to-br from-blue-50/70 via-white to-teal-50/70"
+          className="bg-gradient-to-br from-blue-50/70 via-white to-teal-50/70 rounded-2xl sm:rounded-3xl"
         >
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <FormField
               id="productSearch"
               name="productSearch"
-              label="Search products"
+              label="Search Products"
               type="text"
               placeholder="Search by product name or seller..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={Search}
               wrapperClassName="!space-y-1 text-xs"
-              inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-sm"
+              inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-200 text-xs sm:text-sm"
+              aria-label="Search products"
             />
           </div>
           {error && (
-            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
               {error}
             </div>
           )}
           {loading ? (
-            <div className="py-10 text-center text-sm text-neutral-600">Loading products...</div>
+            <div className="py-10 text-center text-sm text-neutral-600" aria-live="polite">Loading products...</div>
           ) : (
             <>
               <DataTable
@@ -315,29 +327,30 @@ const ProductModeration = () => {
         <Card
           title="Pending Approval Products"
           subtitle={`${pendingProducts.length} products awaiting review`}
-          className="border-2 border-status-warning/20 bg-gradient-to-br from-amber-50/70 via-white to-amber-50/60"
+          className="border-2 border-status-warning/20 bg-gradient-to-br from-amber-50/70 via-white to-amber-50/60 rounded-2xl sm:rounded-3xl"
         >
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <FormField
               id="pendingSearch"
               name="pendingSearch"
-              label="Search pending products"
+              label="Search Pending Products"
               type="text"
               placeholder="Search by product name or seller..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={Search}
               wrapperClassName="!space-y-1 text-xs"
-              inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-sm"
+              inputClassName="rounded-full bg-slate-50/80 border-slate-200 focus:border-amber-400 focus:ring-2 focus:ring-amber-200 text-xs sm:text-sm"
+              aria-label="Search pending products"
             />
           </div>
           {error && (
-            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
               {error}
             </div>
           )}
           {loading ? (
-            <div className="py-10 text-center text-sm text-neutral-600">Loading pending products...</div>
+            <div className="py-10 text-center text-sm text-neutral-600" aria-live="polite">Loading pending products...</div>
           ) : filteredPendingProducts.length > 0 ? (
             <>
               <DataTable

@@ -4,6 +4,8 @@ import { Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import Card from '../../components/common/Card.jsx'
 import FormField from '../../components/common/FormField.jsx'
 import Button from '../../components/common/Button.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { getCategories } from '../../services/categoryService.js'
 import { listProducts } from '../../services/productService.js'
 
@@ -116,7 +118,7 @@ const ProductListing = () => {
   const resolveImage = (product) => {
     const candidate = product.gallery?.[0]
     if (candidate && candidate.startsWith('http')) return candidate
-    return 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
+    return null
   }
 
   const scrollCategory = useCallback((categoryId, direction) => {
@@ -285,14 +287,13 @@ const ProductListing = () => {
                       >
                         {/* Product Image Section */}
                         <div className="relative h-64 w-full overflow-hidden bg-neutral-100">
-                          <img
+                          <OptimizedImage
                             src={productImage}
                             alt={product.name}
+                            fallback={FALLBACK_IMAGES.productCard}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                             loading="lazy"
-                            onError={(e) => {
-                              e.target.src = 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-                            }}
+                            decoding="async"
                           />
                           {/* Gradient Overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />

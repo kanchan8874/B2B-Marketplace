@@ -3,6 +3,8 @@ import { Boxes, Users, PackageSearch, Inbox, ChevronLeft, ChevronRight, Shopping
 import { useRef, useState, useEffect, useCallback } from 'react'
 import Card from '../../components/common/Card.jsx'
 import Button from '../../components/common/Button.jsx'
+import OptimizedImage from '../../components/common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 import { getCategories } from '../../services/categoryService.js'
 import { getBuyerDashboardSummary, getDashboardProducts } from '../../services/buyerService.js'
 
@@ -381,13 +383,13 @@ const Dashboard = () => {
 
   return (
     // Small horizontal padding inside buyer dashboard so left/right gaps look symmetrical
-    <div className="space-y-10 px-1 sm:px-2 lg:px-4">
+    <div className="space-y-6 sm:space-y-8 lg:space-y-10 px-2 sm:px-3 lg:px-4">
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert" aria-live="polite">
           {error}
         </div>
       )}
-      <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" aria-label="Dashboard metrics">
         {metrics.map((metric) => {
           const Icon = metric.icon
           return (
@@ -405,9 +407,9 @@ const Dashboard = () => {
                   </div>
                 </div>
                 
-                <p className={`mt-5 text-4xl font-bold ${metric.textColor}`}>{metric.value}</p>
-                <p className="mt-2 text-sm font-semibold uppercase tracking-[0.35em] text-neutral-600">{metric.label}</p>
-                <p className="mt-2 text-xs text-neutral-500">{metric.helper}</p>
+                <p className={`mt-4 sm:mt-5 text-3xl sm:text-4xl font-bold ${metric.textColor}`}>{metric.value}</p>
+                <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold uppercase tracking-[0.35em] text-neutral-600">{metric.label}</p>
+                <p className="mt-1.5 sm:mt-2 text-xs text-neutral-500">{metric.helper}</p>
               </div>
             </div>
           )
@@ -416,9 +418,9 @@ const Dashboard = () => {
 
       {/* Trending products moved just below KPIs for higher prominence */}
       <Card
-        title="Trending products"
+        title="Trending Products"
         subtitle="What other buyers are actively shortlisting this week."
-        className="rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
+        className="rounded-2xl sm:rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50/70 via-white/95 to-teal-50/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(37,99,235,0.14)]"
       >
         <div
           className="relative"
@@ -432,25 +434,20 @@ const Dashboard = () => {
             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
             {trendingProducts.map((product) => {
-              const productImage =
-                product.gallery?.[0] ||
-                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-
               return (
                 <button
                   key={product.id}
                   onClick={() => navigate(`/buyer/products/${product.id}`)}
-                  className="group relative flex-shrink-0 w-[330px] aspect-[5/5] overflow-hidden rounded-4xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:scale-[1.02] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  className="group relative flex-shrink-0 w-[280px] sm:w-[300px] lg:w-[330px] aspect-[5/5] overflow-hidden rounded-3xl sm:rounded-4xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:scale-[1.02] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 >
                   <div className="relative h-full w-full overflow-hidden">
-                    <img
-                      src={productImage}
+                    <OptimizedImage
+                      src={product.gallery?.[0]}
                       alt={product.name}
+                      fallback={FALLBACK_IMAGES.productCard}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      onError={(e) => {
-                        e.target.src =
-                          'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-                      }}
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent" />
 
@@ -494,14 +491,14 @@ const Dashboard = () => {
       </Card>
 
       <Card
-        title="Browse categories"
+        title="Browse Categories"
         subtitle="Navigate by business function or commodity cluster."
         actions={
-          <Button onClick={() => navigate('/buyer/categories')} variant="secondary">
-            View all
+          <Button onClick={() => navigate('/buyer/categories')} variant="secondary" className="text-xs sm:text-sm">
+            View All
           </Button>
         }
-        className="rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white/90 to-emerald-50/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(16,185,129,0.14)]"
+        className="rounded-2xl sm:rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50/70 via-white/90 to-emerald-50/70 backdrop-blur-xl shadow-[0_20px_60px_rgba(16,185,129,0.14)]"
       >
         <div 
           className="relative"
@@ -524,15 +521,18 @@ const Dashboard = () => {
                 <button
                   key={category.id}
                   onClick={() => navigate(`/buyer/products?category=${category.id}`)}
-                  className="group relative flex-shrink-0 w-[330px] aspect-[5/5] overflow-hidden rounded-4xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                  className="group relative flex-shrink-0 w-[280px] sm:w-[300px] lg:w-[330px] aspect-[5/5] overflow-hidden rounded-3xl sm:rounded-4xl bg-white shadow-[0_4px_18px_rgba(0,0,0,0.12)] transition-all duration-300 hover:shadow-[0_10px_30px_rgba(0,0,0,0.18)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                 >
                   {/* Category Image */}
                   <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-neutral-50 to-neutral-200">
                     {categoryImage ? (
-                      <img
+                      <OptimizedImage
                         src={categoryImage}
                         alt={category.name}
+                        fallback={null}
                         className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 saturate-125 contrast-110 brightness-105"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           // Hide image on error, show gradient background instead
                           e.target.style.display = 'none'
@@ -588,12 +588,13 @@ const Dashboard = () => {
       </Card>
 
       <Card
-        title="Recently shortlisted products"
+        title="Recently Shortlisted Products"
         subtitle="Quick reminders from your last visit."
         actions={
           <button
             onClick={() => navigate('/buyer/products')}
-            className="group relative inline-flex items-center justify-center gap-2 px-2 py-4 rounded-2xl font-bold text-base text-white bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 shadow-[0_8px_24px_rgba(37,99,235,0.35)] hover:shadow-[0_12px_32px_rgba(37,99,235,0.45)] hover:from-blue-700 hover:via-blue-600 hover:to-teal-600 active:scale-[0.98] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 overflow-hidden"
+            className="group relative inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-white bg-gradient-to-r from-blue-600 via-blue-500 to-teal-500 shadow-[0_8px_24px_rgba(37,99,235,0.35)] hover:shadow-[0_12px_32px_rgba(37,99,235,0.45)] hover:from-blue-700 hover:via-blue-600 hover:to-teal-600 active:scale-[0.98] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 overflow-hidden"
+            aria-label="View all products"
           >
             {/* Animated background gradient */}
             <div className="absolute inset-0 bg-gradient-to-r from-teal-400 via-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -601,12 +602,12 @@ const Dashboard = () => {
             {/* Shine effect */}
             <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             
-            <ShoppingBag className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:scale-110" />
-            <span className="relative z-10">Go to catalogue</span>
-            <ArrowRight className="h-5 w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
+            <ShoppingBag className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 transition-transform duration-300 group-hover:scale-110" />
+            <span className="relative z-10">Go to Catalogue</span>
+            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 relative z-10 transition-transform duration-300 group-hover:translate-x-1" />
           </button>
         }
-        className="rounded-3xl border-2 border-teal-200/30 bg-gradient-to-br from-teal-50/50 via-white/80 to-yellow-50/50 backdrop-blur-xl shadow-[0_20px_60px_rgba(32,178,170,0.12)]"
+        className="rounded-2xl sm:rounded-3xl border-2 border-teal-200/30 bg-gradient-to-br from-teal-50/50 via-white/80 to-yellow-50/50 backdrop-blur-xl shadow-[0_20px_60px_rgba(32,178,170,0.12)]"
       >
         <div 
           className="relative"
@@ -622,9 +623,6 @@ const Dashboard = () => {
           >
             {recentProducts.map((product, index) => {
               const categoryName = product.categoryName || 'Product'
-              const productImage =
-                product.gallery?.[0] ||
-                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
               
               // Color schemes matching the image style
               const colorSchemes = [
@@ -669,14 +667,13 @@ const Dashboard = () => {
                 >
                   {/* Product Image Section */}
                   <div className={`relative h-64 w-full overflow-hidden ${scheme.imageBg}`}>
-                    <img
-                      src={productImage}
+                    <OptimizedImage
+                      src={product.gallery?.[0]}
                       alt={product.name}
+                      fallback={FALLBACK_IMAGES.productCard}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                       loading="lazy"
-                      onError={(e) => {
-                        e.target.src = 'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=900&q=80'
-                      }}
+                      decoding="async"
                     />
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />

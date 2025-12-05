@@ -2,6 +2,8 @@ import PropTypes from 'prop-types'
 import Button from '../common/Button.jsx'
 import DataTable from '../common/DataTable.jsx'
 import ProductStatusBadge from './ProductStatusBadge.jsx'
+import OptimizedImage from '../common/OptimizedImage.jsx'
+import { FALLBACK_IMAGES } from '../../constants/images.js'
 
 const ProductListTable = ({ items, onView, onEdit, onDelete }) => {
   const columns = [
@@ -12,17 +14,13 @@ const ProductListTable = ({ items, onView, onEdit, onDelete }) => {
         <div className="flex items-center gap-3">
           {/* Circular thumbnail */}
           <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
-            <img
-              src={
-                row.images?.[0] ||
-                'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
-              }
+            <OptimizedImage
+              src={row.images?.[0]}
               alt={row.name}
+              fallback={FALLBACK_IMAGES.productList}
               className="h-full w-full object-cover"
-              onError={(e) => {
-                e.target.src =
-                  'https://images.unsplash.com/photo-1517430816045-df4b7de11d1d?auto=format&fit=crop&w=200&q=80'
-              }}
+              loading="lazy"
+              decoding="async"
             />
           </div>
           <div>

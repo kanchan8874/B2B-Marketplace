@@ -1,1 +1,0 @@
-// Role constants placeholder.
